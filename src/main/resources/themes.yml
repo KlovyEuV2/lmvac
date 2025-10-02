@@ -1,0 +1,73 @@
+themes:
+  night:
+    alerts:
+      - "%prefix%%//&f%player%//% &#CAFFF6failed &#8E9AFD&f%check% &#CAFFF6check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  arbuz:
+    alerts:
+      - "%prefix%%//&f%player%//% &#B8EFC9failed &#72F356&f%check% &#B8EFC9check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  sunset:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FFB347failed &#FF6347&f%check% &#FFB347check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  purple:
+    alerts:
+      - "%prefix%%//&f%player%//% &#DDA0DDfailed &#9932CC&f%check% &#DDA0DDcheck &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  crimson:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FF69B4failed &#DC143C&f%check% &#FF69B4check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  forest:
+    alerts:
+      - "%prefix%%//&f%player%//% &#90EE90failed &#228B22&f%check% &#90EE90check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  gold:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FFD700failed &#FFA500&f%check% &#FFD700check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  ice:
+    alerts:
+      - "%prefix%%//&f%player%//% &#B0E0E6failed &#00CED1&f%check% &#B0E0E6check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  fire:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FF4500failed &#FF0000&f%check% &#FF4500check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  mint:
+    alerts:
+      - "%prefix%%//&f%player%//% &#98FB98failed &#00FF7F&f%check% &#98FB98check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  coral:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FF7F50failed &#FF6347&f%check% &#FF7F50check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  lavender:
+    alerts:
+      - "%prefix%%//&f%player%//% &#E6E6FAfailed &#9370DB&f%check% &#E6E6FAcheck &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  cherry:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FFB6C1failed &#C71585&f%check% &#FFB6C1check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  emerald:
+    alerts:
+      - "%prefix%%//&f%player%//% &#50C878failed &#00A86B&f%check% &#50C878check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  amber:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FFBF00failed &#FF8C00&f%check% &#FFBF00check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  rose:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FFE4E1failed &#FF1493&f%check% &#FFE4E1check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  steel:
+    alerts:
+      - "%prefix%%//&f%player%//% &#B0C4DEfailed &#4682B4&f%check% &#B0C4DEcheck &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  lime:
+    alerts:
+      - "%prefix%%//&f%player%//% &#32CD32failed &#00FF00&f%check% &#32CD32check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  bronze:
+    alerts:
+      - "%prefix%%//&f%player%//% &#CD7F32failed &#B87333&f%check% &#CD7F32check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  silver:
+    alerts:
+      - "%prefix%%//&f%player%//% &#C0C0C0failed &#A9A9A9&f%check% &#C0C0C0check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  sky:
+    alerts:
+      - "%prefix%%//&f%player%//% &#87CEFAfailed &#00BFFF&f%check% &#87CEFAcheck &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  neon:
+    alerts:
+      - "%prefix%%//&f%player%//% &#39FF14failed &#00FF41&f%check% &#39FF14check &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  magenta:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FF00FFfailed &#8B008B&f%check% &#FF00FFcheck &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"
+  peach:
+    alerts:
+      - "%prefix%%//&f%player%//% &#FFDABAfailed &#FF8C69&f%check% &#FFDABAcheck &#AEB9BC[&#FDA98Ex%vl%&#AEB9BC] &8# %reason%"

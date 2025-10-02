@@ -1,0 +1,125 @@
+main-prefix: "&#FBAF08&lɢ&#FB9E0F&lʟ&#FB8D15&lɪ&#FB7D1C&lᴅ&#FB6C22&lᴇ&#FB5B29&lᴀ&#FB5B29&lᴄ&#FB5B29&l: &r"
+vl-remove-time: 4775
+time-without-alert: 2085
+
+notification:
+  advertising: true # Ну тут небольшая реклама при входе. ;), можете отрубить. (Пишет только тем у кого есть право lmvac.notify.advertising)
+
+# ru_ru, en_us
+locale: ru_ru
+# Доп. Информация о проверке
+# Вызвать можно в алертах, символами:
+# %// - начало, //% - конец
+#
+# доступные плейсхолдеры:
+# %ping% - пинг игрока, %tps% - тпс сервера,
+# %ticking% - обрабатывается ли игрок тиками, может пригодиться для инфо залагало ли у игрока и тд.
+# %prefix% - префикс античита, %displayname% - дисплейнейм игрока.
+main:
+  tab-complete:
+    - '&7'
+    - ' &6&l&n|&r &fПинг: &b%ping% &8| &fТпс: &6%tps%'
+    - ' &6&l| &fИгрок обрабатывается: &6%ticking%'
+    - '&7'
+  alerts:
+    - '%prefix%%//&f%player%//% &#FB5B29failed &#1E90FF&f%check% &#FB5B29check &#AEB9BC[&#FB5B29x%vl%&#AEB9BC] &8# %reason%'
+
+punish:
+  blocked-commands:
+    - "luckperms "
+    - "restart"
+    - "reload"
+    - "stop"
+    - "unban "
+    - "unmute "
+    - "gm"
+    - "gamemode"
+    - "plugman"
+    - "op "
+    - "lp "
+
+# Permissions/Права:
+# lmvac.alerts - checks alerts / сообщения об подозрении
+# lmvac.notify.brand - brand notify / сообщение о клиенте игрока при его заходе
+# lmvac.bypass.#check - bypass check / убрать проверку на данного игрока, см. ваш плагин на права.
+# lmvac.ban - /lmvac ban, lmvac.ban.bypass - bypass.
+# lmvac.theme, .set, .get, .reset, /lmvac theme, lmvac.theme - важное для того что-бы работали другие под-права
+# lmvac.admin - /lmvac checks
+#
+# Commands/Команды:
+# /LmvAC help - для подробной информации
+#
+# In-Plugin-Placeholders/Внутри-плагинные-плейсхолдеры:
+# %prefix% - префикс плагина <main-prefix>
+# %player% - игрок/цель античита
+# %vl% - кол-во подозрении на игрока/цель античита
+#
+#
+
+#
+# Раз в сколько будет сохранять данные об Position_Look/Look.
+# Если не знаете что это, лучше не трогайте.
+#
+# Сделано частично для оптимизаций (Если будет лагать, то попробуйте поставить 20ms(или более). (либо свое значение)
+# Перед тем как менять проверьте нагрузки в Spark, а также из-за чего идет нагрузка.
+# (не рек. ставить маленькое, либо большое значение, тк при малом - может быть нагрузка, при большом - плохой детект. рек. - +- 20ms.
+#
+look:
+  savePT: 20
+
+# Тут настройки AimNpc.
+npc:
+  strafe: true
+  timeout: 3000
+  armor-chane: 70
+  rotation-mode: smart # smart / default
+  rotation-update: 2 # в тиках
+  spawn-mode: smart
+  aim-mode: old # old / new \ middle
+  pattern:
+    look: 9
+    smooth: -1
+    default: 5
+  random: # tab / config
+    mode: TAB
+  names: "akvi4;IIuoner;Error404;M7trix;bmw3000;repeat3000;gercog228;EllO1;RErEreo;OreO3020;OrEo998;MenTos3021;Cola3029;Pepsi1023;Elonmusk300;Pr302er;moderator1029;moder392;shipuchka228;Pon30928;KIllka392;Penit3000;hlebushek9;vmer23900;wwwxyz;LoopRepeat;Mann3029;Eplka302r"
+
+checks:
+  packetorder:
+    a:
+      max-ping: 929
+  inventory:
+    c:
+      diff: 20 # смотрите сами. рек: 20.
+      sprint: 500 # рек. не ниже 500 и не выше 1000.
+    e:
+      cancel-moves: 5 # не рек. ставить ниже 5. (лучше ост 5(def).) (самый минимум - 3. от ложных.)
+    f:
+      cancel-moves: 3 # не рек. ставить ниже 2-3. (лучше ост 5(def).)
+    g: # проверка на пакеты которые игрок не может кидать в инвентаре за последние 50 мс
+      diff: 20 # от ложных (только если расстояние между посл. сликом и текущ. <=diff.
+      threshold: 50 # 50 мс - 1 тик, времени от посл. пакетов (рек 1 тик / 50 мс)
+  invL:
+    position-reset: 5 # рек. ставить 5. (не рек. ставить ниже.)
+    upd-close: true
+  disabled:
+    - SpeedA
+    - FlightA
+    - NowebA
+    - ModerSpoof
+    - ClickSpamA
+    - PacketOrderA
+  visual:
+    checks:
+      a: # esp(metaView)
+        enabled: true
+        hide:
+          health: true            # Убирает здоровье (index 8 — здоровье сущности)
+          effects: true           # Убирает все эффекты зелий (включая ENTITY_EFFECT)
+          item:
+            name: true            # Убирает имя предмета
+            lore: true            # Убирает описание предмета
+            enchants: true          # Убирает все зачарование с предметов и зелий
+            attributes: true        # Убирает атрибуты предметов
+          potion:
+            effects: true         # Убирает эффекты зелья

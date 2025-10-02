@@ -1,0 +1,129 @@
+#
+# Список Action's:
+#
+# $close_inv$, $server_close_inv$, $stop_sprinting$, $stop_sneaking$, $stop_gliding$
+# $stop_flying$, $disable_flight$, $update_inventory$, $player_update_inventory$, $server_update_inventory$
+#
+lua_inventory:
+  checks:
+    - LuaInventoryF
+  punishments:
+    - "7;$flag$"
+    - "3;$alert$"
+#    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+fastswaps:
+  checks:
+    - BadPacketsA
+  punishments:
+    - "7;$flag$"
+    - "5;$alert$"
+#    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+multiActions:
+  checks:
+    - MultiActionsA
+  punishments:
+    - "7;$flag$"
+    - "4;$alert$"
+aim:
+  checks:
+    - AimA
+  punishments:
+    - "11;$alert$"
+    - "14;$flag$"
+npc:
+  checks:
+    - AimNpc
+  punishments:
+    - "4;$alert$"
+    - "5;$flag$"
+    - "7;kick %player% %prefix%&cПодозрение в использовании читов."
+snap:
+  checks:
+    - Snap360
+    - SnapElytra
+  punishments:
+    - "1;lmvac npc %player% -s"
+    - "6;lmvac npc %player% -s"
+    - "2;$alert$"
+    - "5;$flag$"
+guimove-actions:
+  checks:
+    - InventoryG
+  punishments:
+    - "14;$flag$"
+    - "4;$alert$"
+    - "5;$server_close_inv$"
+    - "1;$player_update_inventory$"
+    - "19;kick %player% %prefix%&cПодозрение в использовании читов."
+sprintaura:
+  checks:
+    - SprintB
+  punishments:
+    - "11;$flag$"
+    - "7;$alert$"
+    - '5;lmvac npc %player% -s'
+    - '13;lmvac npc %player% -s'
+    - "17;kick %player% %prefix%&cПодозрение в использовании читов."
+guimove:
+  checks:
+    - InventoryC
+  punishments:
+    - "13;$flag$"
+    - "8;$alert$"
+    - "7;$server_close_inv$"
+    - "1;$player_update_inventory$"
+    - "27;kick %player% %prefix%&cПодозрение в использовании читов."
+guimove_advanced:
+  checks:
+    - InventoryF
+  punishments:
+    - "14;$flag$"
+    - "4;$alert$"
+    #    - "1;$close_inv$"
+    - "1;$close_inv$"
+    - "19;kick %player% %prefix%&cПодозрение в использовании читов."
+guimove_actions:
+  checks:
+    - InventoryE
+  punishments:
+    - "14;$flag$"
+    - "6;$alert$"
+    - "1;$close_inv$"
+    - "1;$player_update_inventory$"
+    - "23;kick %player% %prefix%&cПодозрение в использовании читов."
+funtimeguimove:
+  checks:
+    - InventoryB
+  punishments:
+    - "9;$flag$"
+    - "8;$alert$"
+    - "1;$close_inv$"
+    - "1;$player_update_inventory$"
+    - "23;kick %player% %prefix%&cПодозрение в использовании читов."
+itemswapfix:
+  checks:
+    - BadPacketsD
+  punishments:
+    - "14;$flag$"
+    - "8;$alert$"
+#    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+#flightspeed:
+#  checks:
+#    - FlightC
+#  punishments:
+#    - "1;$flag$"
+#    - "5;$alert$"
+#    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+movementorder:
+  checks:
+    - PacketOrderA
+  punishments:
+    - "14;$flag$"
+    - "11;$alert$"
+    - "39;kick %player% %prefix%&cMovement Packets Timed out."
+default:
+  checks:
+    - default
+  punishments:
+    - "15;$flag$"
+    - "20;$alert$"

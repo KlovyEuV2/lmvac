@@ -1,0 +1,14 @@
+checks:
+  badpacketsa:
+    - "Suspicious slot movement in inventory. DFrom[%0] -> LTo[%1] / NSlot[%2] in %3 ms."
+  badpacketsc:
+    - "Suspicious multi-clicks in inventory. Sprint[%0] / TimeDiff[%1ms]."
+  badpacketsb:
+    - "Suspicious click in inventory during potential movement."
+  badpacketsf:
+    - "Suspend moving maybe in inventory. Close[%0] : Click[%1] with IMoves[%2]."
+  badpacketse:
+    - "Suspiciously sending packet (%0) while the inventory might be open."
+  flightc:
+    - "Suspicious movement while flying. SPerEvent[%0]."
+unknown: "unknown"
