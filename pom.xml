@@ -6,7 +6,7 @@
 
     <groupId>dev.lmv</groupId>
     <artifactId>LmvAC</artifactId>
-    <version>1.0.73</version>
+    <version>1.0.74</version>
     <packaging>jar</packaging>
 
     <name>LmvAC</name>

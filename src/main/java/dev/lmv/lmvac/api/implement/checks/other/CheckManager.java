@@ -7,6 +7,7 @@ import dev.lmv.lmvac.api.modules.checks.aim.snaps.SnapElytra;
 import dev.lmv.lmvac.api.modules.checks.aim.AimNpc;
 import dev.lmv.lmvac.api.modules.checks.autoclicker.inventory.ClickSpamA;
 import dev.lmv.lmvac.api.modules.checks.badpackets.inventory.*;
+import dev.lmv.lmvac.api.modules.checks.badpackets.other.BadPacketsB;
 import dev.lmv.lmvac.api.modules.checks.flight.FlightC;
 import dev.lmv.lmvac.api.modules.checks.inventory.*;
 import dev.lmv.lmvac.api.modules.checks.meta.AttributeCancel;
@@ -33,7 +34,7 @@ public class CheckManager {
                 new BadPacketsA(plugin), new InventoryB(plugin), new BadPacketsD(plugin), new SprintB(plugin),
                 new FlightC(plugin), new PacketTimer(plugin), new MetaCancel(plugin), new Snap360(plugin), new InventoryF(plugin),
                 new InventoryC(plugin), new AimNpc(plugin), new AttributeCancel(plugin), new SnapElytra(plugin), new InventoryE(plugin), new MultiActionsA(plugin),
-                new InventoryG(plugin), new ClickSpamA(plugin)
+                new InventoryG(plugin), new ClickSpamA(plugin), new BadPacketsB(plugin)
         ));
 
         for (Check check : checks) {
