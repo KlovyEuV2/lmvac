@@ -38,7 +38,7 @@ public final class LmvAC extends JavaPlugin {
 
     private dev.lmv.lmvac.api.implement.checks.custom.CustomCheckManager customCheckManager;
 
-    public static String version = "v1.0.73F";
+    public static String version = "v1.0.74F";
     public static String supportLink = "https://dsc.gg/lmvdev";
 
     public static final JavaPlugin getInstance() {

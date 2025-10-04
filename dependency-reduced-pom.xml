@@ -4,7 +4,7 @@
   <groupId>dev.lmv</groupId>
   <artifactId>LmvAC</artifactId>
   <name>LmvAC</name>
-  <version>1.0.73</version>
+  <version>1.0.74</version>
   <build>
     <resources>
       <resource>

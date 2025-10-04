@@ -295,6 +295,20 @@ class LuaCustomCheck extends Check implements PacketCheck, Listener {
             }
         });
 
+        globals.set("getTime", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                try {
+                    long time = System.currentTimeMillis();
+                    return CoerceJavaToLua.coerce(time);
+
+                } catch (Exception e) {
+                    plugin.getLogger().warning("§c[Lua] Ошибка в getTime() для чека " + getName() + ": " + e.getMessage());
+                }
+                return LuaValue.NIL;
+            }
+        });
+
         globals.set("runTaskSync", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue function) {
