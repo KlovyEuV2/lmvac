@@ -1,8 +1,10 @@
 package dev.lmv.lmvac.api.implement.checks.type;
 
+import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.ListeningWhitelist;
+import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.events.PacketListener;
 import com.comphenix.protocol.injector.temporary.TemporaryPlayer;
@@ -18,6 +20,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
 public abstract class Check {
@@ -27,8 +32,11 @@ public abstract class Check {
     private boolean registered = false;
     private PacketListener packetListener;
     private final ProtocolManager protocolManager;
-    private Cooldown cooldown;
+    public Cooldown cooldown;
     public boolean remoteEventEnabled = false;
+
+    public DescType descType;
+    public String description;
 
     public ConcurrentHashMap<String,String> locales = new ConcurrentHashMap<>();
 
@@ -48,7 +56,7 @@ public abstract class Check {
         this.plugin = plugin;
         this.protocolManager = ProtocolLibrary.getProtocolManager();
         Class<? extends Check> clazz = this.getClass();
-        SettingCheck setting = (SettingCheck)clazz.getAnnotation(SettingCheck.class);
+        SettingCheck setting = clazz.getAnnotation(SettingCheck.class);
 
         if (setting == null) {
             throw new IllegalStateException("Check class " + clazz.getSimpleName() + " must have @SettingCheck annotation!");
@@ -56,6 +64,9 @@ public abstract class Check {
             this.name = setting.value();
             this.cooldown = setting.cooldown();
             this.enabled = this.isEnabledInConfig();
+
+            this.description = setting.description();
+            this.descType = setting.descType();
 
             if (this instanceof PacketCheck) {
                 this.packetListener = this.createPacketListener();
@@ -78,7 +89,7 @@ public abstract class Check {
                     if (Check.this.enabled && Check.this.registered) {
                         if (event.getPlayer() == null || !event.getPlayer().isOnline() || (event.getPlayer() instanceof TemporaryPlayer)) return;
                         int id = event.getPlayer().getEntityId();
-                        LmvPlayer targetPlayer = (LmvPlayer)LmvPlayer.players.get(id);
+                        LmvPlayer targetPlayer = LmvPlayer.players.get(id);
                         if (targetPlayer != null) {
                             if (!targetPlayer.hasBypass(Check.this.getName())) {
                                 try {
@@ -96,7 +107,7 @@ public abstract class Check {
                     if (Check.this.enabled && Check.this.registered) {
                         if (event.getPlayer() == null || !event.getPlayer().isOnline() || (event.getPlayer() instanceof TemporaryPlayer)) return;
                         int id = event.getPlayer().getEntityId();
-                        LmvPlayer targetPlayer = (LmvPlayer)LmvPlayer.players.get(id);
+                        LmvPlayer targetPlayer = LmvPlayer.players.get(id);
                         if (targetPlayer != null) {
                             if (!targetPlayer.hasBypass(Check.this.getName())) {
                                 try {
@@ -154,7 +165,7 @@ public abstract class Check {
             if (this instanceof PacketCheck && this.packetListener != null) {
                 try {
                     this.protocolManager.removePacketListener(this.packetListener);
-                } catch (Exception var2) {
+                } catch (Exception ignored) {
                 }
             }
 
@@ -190,13 +201,13 @@ public abstract class Check {
 
     public void flag(Player player) {
         if (player != null) {
-            AlertsManager.sendFlagAlerts((List)null, "lmvac.alerts", true, player, this.name, 0.09, this.cooldown == Cooldown.NO_COOLDOWN ? 0L : 100L);
+            AlertsManager.sendFlagAlerts(null, "lmvac.alerts", true, player, this.name, 0.09, this.cooldown == Cooldown.NO_COOLDOWN ? 0L : 100L);
         }
     }
 
     public void flag(Player player, String reason) {
         if (player != null) {
-            AlertsManager.sendFlagAlerts((List)null, "lmvac.alerts", true, player, this.name, 0.09, this.cooldown == Cooldown.NO_COOLDOWN ? 0L : 100L, reason);
+            AlertsManager.sendFlagAlerts(null, "lmvac.alerts", true, player, this.name, 0.09, this.cooldown == Cooldown.NO_COOLDOWN ? 0L : 100L, reason);
         }
     }
 

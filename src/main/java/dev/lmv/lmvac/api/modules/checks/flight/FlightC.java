@@ -2,6 +2,7 @@ package dev.lmv.lmvac.api.modules.checks.flight;
 
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.BukkitCheck;
@@ -19,7 +20,8 @@ import org.bukkit.plugin.Plugin;
 // fly-speed / DragonFlight / FlightStrafe
 @SettingCheck(
    value = "FlightC",
-   cooldown = Cooldown.COOLDOWN
+   cooldown = Cooldown.COOLDOWN,
+   descType = DescType.BETA
 )
 public class FlightC extends Check implements BukkitCheck {
    public static ConcurrentHashMap<UUID,Long> lastFlight = new ConcurrentHashMap<>();
@@ -44,27 +46,32 @@ public class FlightC extends Check implements BukkitCheck {
       }
    }
 
-   private void handleEssentials(PlayerMoveEvent event) {
-      Player player = event.getPlayer();
-      int id = event.getPlayer().getEntityId();
-      LmvPlayer targetPlayer = (LmvPlayer)LmvPlayer.players.get(id);
-      if (targetPlayer != null) {
-         if (player.isFlying() && !player.isInsideVehicle()) {
-            if (!targetPlayer.hasBypass(this.getName())) {
-               Location from = event.getFrom();
-               Location to = event.getTo();
-               double distance = from.distance(to);
-               if (distance > this.getMaxSpeed(event)) {
-                  String reason = locales.getOrDefault("1", "Suspicious movement while flying. SPerEvent[%0].");
-                  String pReason = reason.replace("%0", String.format("%.2f", distance));
-                  event.setCancelled(true);
-                  this.flag(player,pReason);
-               }
+    private void handleEssentials(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        int id = player.getEntityId();
+        LmvPlayer targetPlayer = LmvPlayer.players.get(id);
 
+        if (targetPlayer != null) {
+            if (player.isFlying() && !player.isInsideVehicle()) {
+                if (!targetPlayer.hasBypass(this.getName())) {
+                    Location from = event.getFrom();
+                    Location to = event.getTo();
+
+                    double dx = from.getX() - to.getX();
+                    double dy = from.getY() - to.getY();
+                    double dz = from.getZ() - to.getZ();
+                    double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                    if (distance > this.getMaxSpeed(event)) {
+                        String reason = locales.getOrDefault("1", "Suspicious movement while flying. SPerEvent[%0].");
+                        String pReason = reason.replace("%0", String.format("%.2f", distance));
+                        event.setCancelled(true);
+                        this.flag(player, pReason);
+                    }
+                }
             }
-         }
-      }
-   }
+        }
+    }
 
    private double getMaxSpeed(PlayerMoveEvent event) {
       Player player = event.getPlayer();

@@ -4,7 +4,10 @@ import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.ListeningWhitelist;
 import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import dev.lmv.lmvac.api.ConfigManager;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
+import dev.lmv.lmvac.api.implement.checks.other.CheckManager;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
@@ -36,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CustomCheckManager {
     private final Plugin plugin;
-    private final Map<String, Check> loadedChecks = new ConcurrentHashMap<>();
+    public static final Map<String, Check> loadedChecks = new ConcurrentHashMap<>();
     private final File luaFolder;
     private final File javaFolder;
     private final File compiledFolder;
@@ -295,6 +298,20 @@ class LuaCustomCheck extends Check implements PacketCheck, Listener {
             }
         });
 
+        globals.set("getTime", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                try {
+                    long time = System.currentTimeMillis();
+                    return CoerceJavaToLua.coerce(time);
+
+                } catch (Exception e) {
+                    plugin.getLogger().warning("§c[Lua] Ошибка в getTime() для чека " + getName() + ": " + e.getMessage());
+                }
+                return LuaValue.NIL;
+            }
+        });
+
         globals.set("runTaskSync", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue function) {
@@ -370,6 +387,7 @@ class LuaCustomCheck extends Check implements PacketCheck, Listener {
                     final String message = messageValue.tojstring();
 
                     getPlugin().getServer().getScheduler().runTask(getPlugin(), () -> {
+                        if (!player.isOnline()) return;
                         player.sendMessage(message);
                     });
                 } catch (Exception e) {
@@ -416,6 +434,7 @@ class LuaCustomCheck extends Check implements PacketCheck, Listener {
             if (!cooldownValue.isnil()) {
                 try {
                     this.checkCooldown = Cooldown.valueOf(cooldownValue.tojstring());
+                    this.cooldown = Cooldown.valueOf(cooldownValue.tojstring());
                 } catch (Exception ignored) {}
             }
         }

@@ -33,7 +33,7 @@ public class Geyser {
 
    private static void initializeReflection() {
       try {
-         Class geyserApiClass = Class.forName("org.geysermc.geyser.api.GeyserApi");
+         Class<?> geyserApiClass = Class.forName("org.geysermc.geyser.api.GeyserApi");
          geyserApiMethod = geyserApiClass.getMethod("api");
          isBedrockPlayerMethod = geyserApiClass.getMethod("isBedrockPlayer", UUID.class);
       } catch (Exception var4) {

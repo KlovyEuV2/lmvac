@@ -13,11 +13,9 @@ import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -37,11 +35,11 @@ public class NegativeTimer extends Check implements PacketCheck {
     public static final ConcurrentHashMap<UUID, List<Long>> suspends = new ConcurrentHashMap<>();
     private static final double MOVEMENT_THRESHOLD = 0.2;
     private static final double MIN_AVERAGE_SPEED = 0.05;
-    private final ConcurrentHashMap<UUID,Long> movementStartTime = new ConcurrentHashMap();
+    private final ConcurrentHashMap<UUID,Long> movementStartTime = new ConcurrentHashMap<>();
     private static final long MOVEMENT_GRACE_PERIOD_MS = 850L;
     private static final int WINDOW_SIZE = 10;
     private static final long WINDOW_UPDATE_TICKS = 2L;
-    public static final ConcurrentHashMap<UUID, List<Long>> suspendsT = new ConcurrentHashMap();
+    public static final ConcurrentHashMap<UUID, List<Long>> suspendsT = new ConcurrentHashMap<>();
 
     private BukkitTask timerTask;
     private volatile boolean isShutdown = false;
@@ -98,6 +96,7 @@ public class NegativeTimer extends Check implements PacketCheck {
 
                             if (!this.isShutdown && plugin.isEnabled()) {
                                 Bukkit.getScheduler().runTask(LmvAC.getInstance(), () -> {
+                                    if (!player.isOnline()) return;
                                     if (!this.isShutdown) {
                                         this.flag(player);
                                     }
@@ -168,9 +167,8 @@ public class NegativeTimer extends Check implements PacketCheck {
                         return;
                     }
 
-                    boolean shouldCancel = true;
                     int maxSize = 10;
-                    if (shouldCancel && list.size() > maxSize) {
+                    if (list.size() > maxSize) {
                         event.setCancelled(true);
                     }
                 }
@@ -243,18 +241,7 @@ public class NegativeTimer extends Check implements PacketCheck {
         }
     }
 
-    public void onPacketSending(PacketEvent event) {
-    }
-
-    public ListeningWhitelist getSendingWhitelist() {
-        return ListeningWhitelist.newBuilder().build();
-    }
-
     public ListeningWhitelist getReceivingWhitelist() {
-        return ListeningWhitelist.newBuilder().types(new PacketType[]{Client.POSITION, Client.POSITION_LOOK, Client.LOOK}).build();
-    }
-
-    public Plugin getPlugin() {
-        return LmvAC.getInstance();
+        return ListeningWhitelist.newBuilder().types(Client.POSITION, Client.POSITION_LOOK, Client.LOOK).build();
     }
 }

@@ -50,10 +50,10 @@ public class Snap360 extends Check implements PacketCheck, Listener {
          long now = System.currentTimeMillis();
          detects.computeIfAbsent(player, k -> new ArrayList<>()).removeIf(k -> now-k > 1500);
          if (packetType == Client.LOOK || packetType == Client.POSITION_LOOK) {
-            List looks = targetPlayer.looks;
+            List<LmvPlayer.LookInformation> looks = targetPlayer.looks;
             if (looks.size() >= 2) {
-               LmvPlayer.LookInformation lastLook = (LmvPlayer.LookInformation)looks.get(looks.size() - 2);
-               LmvPlayer.LookInformation currentLook = (LmvPlayer.LookInformation)looks.get(looks.size() - 1);
+               LmvPlayer.LookInformation lastLook = looks.get(looks.size() - 2);
+               LmvPlayer.LookInformation currentLook = looks.get(looks.size() - 1);
                if (lastLook != null && currentLook != null) {
                   if (lastLook.location != null && currentLook.location != null) {
                      Location lastLocation = lastLook.location.clone();
@@ -72,11 +72,9 @@ public class Snap360 extends Check implements PacketCheck, Listener {
 
                      boolean snap = targetChanged && yawDiff > 85.0F;
                      AimInformation thisAim = new AimInformation(packetEvent, lastLook, currentLook, snap, yawDiff);
-                     List lastAims = (List)playerAimData.computeIfAbsent(player, (k) -> {
-                        return new ArrayList();
-                     });
+                     List<AimInformation> lastAims = playerAimData.computeIfAbsent(player, (k) -> new ArrayList<>());
                      if (lastAims.size() > 2) {
-                        AimInformation lastAim = (AimInformation)lastAims.get(lastAims.size() - 1);
+                        AimInformation lastAim = lastAims.get(lastAims.size() - 1);
                         if (lastAim.isSnap && !thisAim.isSnap && yawDiff < 30.0F && currentLook.target != null || lastAim.isSnap && thisAim.isSnap && lastAim.thisLook.target != null && currentLook.target == null && Math.abs(lastAim.yawDiff - thisAim.yawDiff) < 15.0F) {
                            this.flag(player);
                            detects.computeIfAbsent(player,k -> new ArrayList<>()).add(now);
@@ -102,7 +100,7 @@ public class Snap360 extends Check implements PacketCheck, Listener {
    }
 
    public ListeningWhitelist getReceivingWhitelist() {
-      return ListeningWhitelist.newBuilder().types(new PacketType[]{Client.LOOK, Client.POSITION_LOOK, Client.USE_ENTITY}).build();
+      return ListeningWhitelist.newBuilder().types(Client.LOOK, Client.POSITION_LOOK, Client.USE_ENTITY).build();
    }
 
    public static class AimInformation {

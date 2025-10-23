@@ -5,6 +5,7 @@ import com.comphenix.protocol.events.ListeningWhitelist;
 import com.comphenix.protocol.events.PacketEvent;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.BukkitCheck;
@@ -12,11 +13,15 @@ import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import java.util.ArrayList;
+import java.util.List;
+
 // Движение головы и других пакетов в инвентаре
-@SettingCheck(value = "InventoryE", cooldown = Cooldown.COOLDOWN)
+@SettingCheck(value = "InventoryE", cooldown = Cooldown.COOLDOWN, description = "Packet' GuiMove detection", descType = DescType.RELEASE)
 public class InventoryE extends Check implements BukkitCheck, PacketCheck {
 
     public static int IMoves = 5;
+    public static List<PacketType> allowed = new ArrayList<>();
 
     public InventoryE(Plugin plugin) {
         super(plugin);
@@ -25,6 +30,23 @@ public class InventoryE extends Check implements BukkitCheck, PacketCheck {
 
     public static void reloadCfg(Plugin plugin) {
         IMoves = plugin.getConfig().getInt("checks.inventory.e.cancel-moves", 5);
+        List<String> allowedN = plugin.getConfig().getStringList("checks.inventory.e.packets");
+        if (!allowedN.isEmpty()) allowed.clear();
+        for (String name : allowedN) {
+            try {
+                String targetName = name.toUpperCase();
+
+                PacketType found = null;
+                for (PacketType type : PacketType.Play.Client.getInstance().values()) {
+                    if (type.name().equalsIgnoreCase(targetName)) {
+                        found = type;
+                        break;
+                    }
+                }
+                if (found != null) allowed.add(found);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
     }
 
     public void onPacketReceiving(PacketEvent event) {
@@ -40,17 +62,13 @@ public class InventoryE extends Check implements BukkitCheck, PacketCheck {
         String reason = locales.getOrDefault("1","Suspiciously sending packet (%0) while the inventory might be open.");
         String pReason = reason.replaceAll("%0",packetType.name().toString().toUpperCase());
 
+        if ((!allowed.isEmpty() && !allowed.contains(packetType)) || (allowed.isEmpty() && packetType.equals(PacketType.Play.Client.POSITION_LOOK))) return;
         if (packetType.equals(PacketType.Play.Client.POSITION_LOOK) ||
                 packetType.equals(PacketType.Play.Client.POSITION)) {
-
             handleMovementPacket(event, player, client, packetType, pReason);
-
         } else if (packetType.equals(PacketType.Play.Client.WINDOW_CLICK)) {
-
             handleWindowClickPacket(event, client, pReason);
-
         } else {
-
             if (client.isInventoryOpened) {
                 aFlag(player, client, event, pReason);
             }

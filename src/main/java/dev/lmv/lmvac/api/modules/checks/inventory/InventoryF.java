@@ -6,6 +6,7 @@ import com.comphenix.protocol.events.PacketEvent;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import dev.lmv.lmvac.api.implement.api.settings.LocaleManager;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.BukkitCheck;
@@ -16,7 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 // Движения в инвентаре
-@SettingCheck(value = "InventoryF", cooldown = Cooldown.COOLDOWN)
+@SettingCheck(value = "InventoryF", cooldown = Cooldown.COOLDOWN, descType = DescType.RELEASE, description = "InventoryMove/GuiMove detection")
 public class InventoryF extends Check implements BukkitCheck, PacketCheck {
     public static int IMoves = 5;
     public InventoryF(Plugin plugin) {

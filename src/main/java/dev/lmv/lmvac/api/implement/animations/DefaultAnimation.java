@@ -14,7 +14,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 public class DefaultAnimation {
-   public static void play(final Player player, final List commands) {
+   public static void play(final Player player, final List<String> commands) {
       Blocker.players.put(player.getUniqueId(), commands);
       if (!player.isDead()) {
          player.setAllowFlight(false);

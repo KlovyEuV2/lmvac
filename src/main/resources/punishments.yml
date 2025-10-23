@@ -4,12 +4,20 @@
 # $close_inv$, $server_close_inv$, $stop_sprinting$, $stop_sneaking$, $stop_gliding$
 # $stop_flying$, $disable_flight$, $update_inventory$, $player_update_inventory$, $server_update_inventory$
 #
-lua_inventory:
+autofish:
   checks:
-    - LuaInventoryF
+    - AutoFishA
   punishments:
     - "7;$flag$"
-    - "3;$alert$"
+    - "2;$alert$"
+#    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+autoclicker:
+  checks:
+    - PacketSpamA
+    - ClickSpamA
+  punishments:
+    - "14;$flag$"
+    - "7;$alert$"
 #    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
 fastswaps:
   checks:
@@ -36,6 +44,9 @@ npc:
   punishments:
     - "4;$alert$"
     - "5;$flag$"
+    #    - "1;$fdamage_0.1$"
+    #    - "2;$fdamage_0.05$"
+    #    - "3;$fdamage_0.01$"
     - "7;kick %player% %prefix%&cПодозрение в использовании читов."
 snap:
   checks:
@@ -61,6 +72,9 @@ sprintaura:
   punishments:
     - "11;$flag$"
     - "7;$alert$"
+    #    - "3;$fdamage_0.1$"
+    #    - "5;$fdamage_0.05$"
+    #    - "6;$fdamage_0.01$"
     - '5;lmvac npc %player% -s'
     - '13;lmvac npc %player% -s'
     - "17;kick %player% %prefix%&cПодозрение в использовании читов."
@@ -89,7 +103,6 @@ guimove_actions:
     - "14;$flag$"
     - "6;$alert$"
     - "1;$close_inv$"
-    - "1;$player_update_inventory$"
     - "23;kick %player% %prefix%&cПодозрение в использовании читов."
 funtimeguimove:
   checks:

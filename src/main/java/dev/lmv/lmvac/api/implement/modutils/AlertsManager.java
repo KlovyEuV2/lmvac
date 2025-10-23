@@ -86,22 +86,53 @@ public class AlertsManager implements Listener {
         }
     }
 
+    private static final Object LOCK = new Object();
+
     private static void initExecutors() {
-        shutdown();
-        commandExecutor = Executors.newSingleThreadScheduledExecutor((r) -> {
-            Thread t = new Thread(r, "AlertsManager-CommandExecutor");
-            t.setDaemon(true);
-            t.setPriority(Thread.NORM_PRIORITY - 1);
-            return t;
-        });
-        cleanupExecutor = Executors.newSingleThreadScheduledExecutor((r) -> {
-            Thread t = new Thread(r, "AlertsManager-Cleanup");
-            t.setDaemon(true);
-            t.setPriority(Thread.MIN_PRIORITY);
-            return t;
-        });
-        startCommandProcessor();
-        startDataCleanup();
+        synchronized (LOCK) {
+            shutdownExecutor(commandExecutor);
+            shutdownExecutor(cleanupExecutor);
+
+            commandExecutor = Executors.newSingleThreadScheduledExecutor((r) -> {
+                Thread t = new Thread(r, "AlertsManager-CommandExecutor");
+                t.setDaemon(true);
+                t.setPriority(Thread.NORM_PRIORITY - 1);
+                t.setUncaughtExceptionHandler((thread, ex) -> {
+                    ex.printStackTrace();
+                });
+                return t;
+            });
+
+            cleanupExecutor = Executors.newSingleThreadScheduledExecutor((r) -> {
+                Thread t = new Thread(r, "AlertsManager-Cleanup");
+                t.setDaemon(true);
+                t.setPriority(Thread.MIN_PRIORITY);
+                t.setUncaughtExceptionHandler((thread, ex) -> {
+                    ex.printStackTrace();
+                });
+                return t;
+            });
+
+            startCommandProcessor();
+            startDataCleanup();
+        }
+    }
+
+    private static void shutdownExecutor(ScheduledExecutorService executor) {
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                    if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                        return;
+                    }
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private static void startCommandProcessor() {
@@ -220,6 +251,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
                     player.updateInventory();
                 }
@@ -230,6 +262,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     if (client == null || !client.isServerInventoryOpened) return;
                     player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
                     player.updateInventory();
@@ -241,6 +274,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     player.setSprinting(false);
                 }
             });
@@ -250,6 +284,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     player.setSneaking(false);
                 }
             });
@@ -259,6 +294,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     player.setGliding(false);
                 }
             });
@@ -268,6 +304,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     player.setFlying(false);
                 }
             });
@@ -277,6 +314,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     player.setAllowFlight(false);
                 }
             });
@@ -286,6 +324,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     player.updateInventory();
                 }
             });
@@ -295,6 +334,7 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     if (!client.isServerInventoryOpened) {
                         player.updateInventory();
                     }
@@ -306,9 +346,21 @@ public class AlertsManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                 @Override
                 public void run() {
+                    if (!player.isOnline()) return;
                     if (client.isServerInventoryOpened) {
                         player.updateInventory();
                     }
+                }
+            });
+        }
+
+        double damageMultiplier = Punishments.getValue(suspendArg, currentVl, "$fdamage_{}$", 1.0);
+        if (damageMultiplier != 1.0) {
+            Bukkit.getScheduler().runTask(plugin, new Runnable() {
+                @Override
+                public void run() {
+                    if (!player.isOnline()) return;
+                    client.damageMultiple = damageMultiplier;
                 }
             });
         }
@@ -332,6 +384,7 @@ public class AlertsManager implements Listener {
             int currentVl = addVlToPlayer(player, suspendArg);
             if (Punishments.getLower(suspendArg, currentVl, "$flag$", 99) && !player.isDead()) {
                 Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (!player.isOnline()) return;
                     Bukkit.getPluginManager().callEvent(new FlagEvent(player, FlagType.MOVEMENT_ONE, 1, "unknown", currentVl));
                 });
             }

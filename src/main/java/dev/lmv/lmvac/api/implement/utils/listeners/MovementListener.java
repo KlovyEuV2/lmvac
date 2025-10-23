@@ -35,12 +35,8 @@ public class MovementListener implements Listener {
       Player player = ev.getPlayer();
       if (ev.getFrom().distance(ev.getTo()) > 0.07999999821186066) {
          lastMoveTime.put(player.getUniqueId(), System.currentTimeMillis());
-         ((List)lastEvents.computeIfAbsent(player.getUniqueId(), (k) -> {
-            return new ArrayList();
-         })).add(ev);
-         ((List)lastLocations.computeIfAbsent(player.getUniqueId(), (k) -> {
-            return new ArrayList();
-         })).add(player.getLocation());
+         lastEvents.computeIfAbsent(player.getUniqueId(), (k) -> new ArrayList<>()).add(ev);
+         lastLocations.computeIfAbsent(player.getUniqueId(), (k) -> new ArrayList<>()).add(player.getLocation());
       }
 
    }

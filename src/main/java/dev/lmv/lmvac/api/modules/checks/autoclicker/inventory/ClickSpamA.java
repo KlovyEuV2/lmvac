@@ -9,6 +9,8 @@ import dev.lmv.lmvac.api.implement.checks.type.Check;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -25,7 +27,9 @@ public class ClickSpamA extends Check implements PacketCheck {
     public static ConcurrentHashMap<UUID,ClickData> lastClicks = new ConcurrentHashMap<>();
     public ClickSpamA(Plugin plugin) {
         super(plugin);
+        reloadCfg(plugin);
     }
+    private static Long max_diff = 30L;
     public static class ClickData {
         public long time;
         public ItemStack item;
@@ -34,18 +38,28 @@ public class ClickSpamA extends Check implements PacketCheck {
             this.item = item;
         }
     }
+    public static void reloadCfg(Plugin plugin) {
+        ConfigurationSection section = plugin.getConfig().getConfigurationSection("checks.autoclicker.ClickSpamA");
+        try {
+            max_diff = section.getLong("diff",30L);
+        } catch (Exception e) {
+            max_diff = 30L;
+        }
+    }
     public void onPacketReceiving(PacketEvent event) {
         Player player = event.getPlayer();
         PacketType packetType = event.getPacketType();
         PacketContainer packet = event.getPacket();
         long now = System.currentTimeMillis();
         if (packetType.equals(PacketType.Play.Client.WINDOW_CLICK)) {
+            if (player.getItemOnCursor().getType() != Material.AIR) return;
             int slot = event.getPacket().getIntegers().read(1);
             ItemStack clickedItem = event.getPacket().getItemModifier().readSafely(0);
             int id = event.getPlayer().getEntityId();
             LmvPlayer client = (LmvPlayer) LmvPlayer.players.get(id);
             if (client == null) return;
             ClickData lastClick = null;
+
             if (lastClicks.containsKey(player.getUniqueId())) {
                 lastClick = lastClicks.get(player.getUniqueId());
             }
@@ -55,17 +69,14 @@ public class ClickSpamA extends Check implements PacketCheck {
             }
             double diff = -404;
             if (lastClick.time > -404) diff = now-lastClick.time;
-            if (diff > -404 && diff <= 30) {
-                aFlag(event,player);
+            if (diff > -404 && diff <= max_diff) {
+                event.setCancelled(true);
+                flag(player);
             }
             lastClicks.put(player.getUniqueId(),new ClickData(clickedItem));
         }
     }
-    public void aFlag(PacketEvent event, Player player) {
-        event.setCancelled(true);
-        flag(player);
-    }
     public ListeningWhitelist getReceivingWhitelist() {
-        return ListeningWhitelist.newBuilder().types(new PacketType[]{PacketType.Play.Client.WINDOW_CLICK}).build();
+        return ListeningWhitelist.newBuilder().types(PacketType.Play.Client.WINDOW_CLICK).build();
     }
 }

@@ -13,7 +13,7 @@ public class FlagEvent extends Event implements Cancellable {
 
     private final Player player;
     private final FlagType flagType;
-    private int flagsCount;
+    private final int flagsCount;
     public int count = -1;
     private final String checkType;
     private final int violationLevel;

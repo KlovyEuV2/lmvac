@@ -53,6 +53,6 @@ public class MultiActionsA extends Check implements PacketCheck {
 //        return !(deltaX < 0.001 && deltaY < 0.001 && deltaZ < 0.001);
 //    }
     public ListeningWhitelist getReceivingWhitelist() {
-        return ListeningWhitelist.newBuilder().types(new PacketType[]{PacketType.Play.Client.USE_ENTITY}).build();
+        return ListeningWhitelist.newBuilder().types(PacketType.Play.Client.USE_ENTITY).build();
     }
 }

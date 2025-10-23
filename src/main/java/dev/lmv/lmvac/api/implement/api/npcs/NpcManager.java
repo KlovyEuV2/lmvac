@@ -2,34 +2,28 @@ package dev.lmv.lmvac.api.implement.api.npcs;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.*;
-import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
-import dev.lmv.lmvac.api.modules.checks.aim.AimNpc;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
-import org.jetbrains.annotations.NotNull;
 
-import javax.sound.midi.Track;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,22 +58,66 @@ public class NpcManager {
 
     public static int updateTicks = 2;
 
+    public static boolean smoothAim_Enabled = true;
+    public static int smoothAim_Duration = 4;
+
+    public static boolean handShake_Enabled = true;
+    public static long handShake_diff = 580;
+    public static int handShake_add = 50;
+
+    public static boolean armorVirtualization_Enabled = true;
+
+    private static BukkitTask updater;
+
+    private static String nmsVersion;
+    private static boolean useReflection = true;
+
     public NpcManager(JavaPlugin pl) {
         plugin = pl;
         detectVersion();
+        initializeNMSVersion();
+        loadSettings(plugin);
+
         startUpdater();
         startListeners();
+
         nameManager = new NPCNameManager(plugin);
-        loadSettings(plugin);
     }
 
     public static void loadSettings(Plugin plugin) {
-        strafe = plugin.getConfig().getBoolean("npc.strafe", false);
+        ConfigurationSection npc = plugin.getConfig().getConfigurationSection("npc");
+        ConfigurationSection handShake = npc.getConfigurationSection("hand-shake");
+        try {
+            handShake_Enabled = handShake.getBoolean("enabled", true);
+            handShake_diff = handShake.getLong("min-diff", 580);
+            handShake_add = handShake.getInt("random-add", 50);
+        } catch (Exception e) {
+            handShake_Enabled = true;
+            handShake_diff = 580;
+            handShake_add = 50;
+        }
 
-        String rotMode = plugin.getConfig().getString("npc.rotation-mode", "default").toLowerCase();
+        ConfigurationSection smoothAim = npc.getConfigurationSection("smooth-aim");
+        try {
+            smoothAim_Enabled = smoothAim.getBoolean("enabled", true);
+            smoothAim_Duration = smoothAim.getInt("per-ticks", 4);
+        } catch (Exception e) {
+            smoothAim_Enabled = false;
+            smoothAim_Duration = 2;
+        }
+
+        try {
+            armorVirtualization_Enabled = npc.getBoolean("armor-virtualization", true);
+        } catch (Exception e) {
+            armorVirtualization_Enabled = true;
+        }
+
+        strafe = npc.getBoolean("strafe", false);
+
+        String rotMode = npc.getString("rotation-mode", "default").toLowerCase();
         rotationMode = rotMode.equals("smart") ? RotationMode.SMART : RotationMode.DEFAULT;
 
-        String aimModeStr = plugin.getConfig().getString("npc.aim-mode", "old").toLowerCase();
+        String aimModeStr = npc.getString("aim-mode", "old").toLowerCase();
         switch (aimModeStr) {
             case "new":
                 aimMode = AimMode.NEW;
@@ -92,14 +130,14 @@ public class NpcManager {
                 break;
         }
 
-        lookPattern = plugin.getConfig().getInt("npc.pattern.look", 9);
-        smoothPattern = plugin.getConfig().getInt("npc.pattern.smooth", -1);
-        defaultPattern = plugin.getConfig().getInt("npc.pattern.default", 5);
+        lookPattern = npc.getInt("pattern.look", 9);
+        smoothPattern = npc.getInt("pattern.smooth", -1);
+        defaultPattern = npc.getInt("pattern.default", 5);
 
-        String randMode = plugin.getConfig().getString("npc.random.mode", "TAB").toUpperCase();
-        randomMode = randMode.equals("CONFIG") ? RandomMode.CONFIG : RandomMode.TAB;
+        String randMode = npc.getString("random.mode", "TAB").toUpperCase();
+        randomMode = RandomMode.valueOf(randMode.toUpperCase()) != null ? RandomMode.valueOf(randMode.toUpperCase()) : RandomMode.TAB;
 
-        String namesStr = plugin.getConfig().getString("npc.names", "");
+        String namesStr = npc.getString("names", "");
         if (!namesStr.isEmpty()) {
             npcNames = Arrays.asList(namesStr.split(";"));
         } else {
@@ -112,22 +150,22 @@ public class NpcManager {
             );
         }
 
-        long timeout = plugin.getConfig().getLong("npc.timeout",3000);
+        long timeout = npc.getLong("timeout", 3000);
         try {
             TIMEOUT_MS = timeout;
         } catch (Exception e) {
             TIMEOUT_MS = 3000;
         }
 
-        int rotUpd = plugin.getConfig().getInt("npc.rotation-update",2);
+        int rotUpd = npc.getInt("rotation-update", 2);
         try {
             updateTicks = rotUpd;
         } catch (Exception e) {
             updateTicks = 2;
         }
 
-        armorChance = plugin.getConfig().getInt("npc.armor-chance",70);
-        spawnMode = RotationMode.valueOf(plugin.getConfig().getString("npc.spawn-mode","SMART").toUpperCase());
+        armorChance = npc.getInt("armor-chance", 70);
+        spawnMode = RotationMode.valueOf(npc.getString("spawn-mode", "SMART").toUpperCase());
     }
 
     public static boolean addRemote(Check check) {
@@ -175,6 +213,18 @@ public class NpcManager {
                 ", newest: " + isNewestVersion + ")");
     }
 
+    private static void initializeNMSVersion() {
+        try {
+            String packageName = Bukkit.getServer().getClass().getPackage().getName();
+            nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
+            plugin.getLogger().info("NMS Version: " + nmsVersion);
+        } catch (Exception e) {
+            nmsVersion = "";
+            useReflection = false;
+            plugin.getLogger().warning("Не удалось определить NMS версию, виртуализация будет ограничена");
+        }
+    }
+
     public static void spawnNpcFor(Player player, String name, WrappedGameProfile profile) {
         UUID playerId = player.getUniqueId();
         long now = System.currentTimeMillis();
@@ -193,9 +243,10 @@ public class NpcManager {
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 try {
+                    if (!player.isOnline()) return;
                     spawnPlayerEntity(player, entityId, profile, loc);
                     rotateHead(player, entityId, loc);
-                    if (Math.random()*100 < armorChance) sendRandomArmor(player, entityId);
+                    if (Math.random() * 100 < armorChance) sendVirtualizedArmor(player, entityId);
                 } catch (Exception e) {
                 }
             }, 3L);
@@ -209,22 +260,470 @@ public class NpcManager {
         }
     }
 
-    private static void sendFakeArmor(Player player, int entityId) {
+    private static void sendVirtualizedArmor(Player player, int entityId) {
         try {
             PacketContainer equipmentPacket = new PacketContainer(PacketType.Play.Server.ENTITY_EQUIPMENT);
             equipmentPacket.getIntegers().write(0, entityId);
 
-            List<Pair<EnumWrappers.ItemSlot, ItemStack>> equipment = Arrays.asList(
-                    new Pair<>(EnumWrappers.ItemSlot.HEAD, new ItemStack(Material.DIAMOND_HELMET)),
-                    new Pair<>(EnumWrappers.ItemSlot.CHEST, new ItemStack(Material.DIAMOND_CHESTPLATE)),
-                    new Pair<>(EnumWrappers.ItemSlot.LEGS, new ItemStack(Material.DIAMOND_LEGGINGS)),
-                    new Pair<>(EnumWrappers.ItemSlot.FEET, new ItemStack(Material.DIAMOND_BOOTS))
-            );
+            Random rand = new Random();
+            List<Pair<EnumWrappers.ItemSlot, ItemStack>> equipment = new ArrayList<>();
+
+            Material[] helmetTypes = {Material.DIAMOND_HELMET, Material.NETHERITE_HELMET, Material.IRON_HELMET};
+            Material[] chestTypes = {Material.DIAMOND_CHESTPLATE, Material.NETHERITE_CHESTPLATE, Material.IRON_CHESTPLATE};
+            Material[] legsTypes = {Material.DIAMOND_LEGGINGS, Material.NETHERITE_LEGGINGS, Material.IRON_LEGGINGS};
+            Material[] bootsTypes = {Material.DIAMOND_BOOTS, Material.NETHERITE_BOOTS, Material.IRON_BOOTS};
+
+            equipment.add(new Pair<>(EnumWrappers.ItemSlot.HEAD,
+                    createVirtualizedArmor(helmetTypes[rand.nextInt(helmetTypes.length)])));
+            equipment.add(new Pair<>(EnumWrappers.ItemSlot.CHEST,
+                    createVirtualizedArmor(chestTypes[rand.nextInt(chestTypes.length)])));
+            equipment.add(new Pair<>(EnumWrappers.ItemSlot.LEGS,
+                    createVirtualizedArmor(legsTypes[rand.nextInt(legsTypes.length)])));
+            equipment.add(new Pair<>(EnumWrappers.ItemSlot.FEET,
+                    createVirtualizedArmor(bootsTypes[rand.nextInt(bootsTypes.length)])));
+
+            if (rand.nextInt(100) < 60) {
+                Material[] weaponTypes = {Material.DIAMOND_SWORD, Material.NETHERITE_SWORD, Material.IRON_SWORD};
+                equipment.add(new Pair<>(EnumWrappers.ItemSlot.MAINHAND,
+                        createVirtualizedWeapon(weaponTypes[rand.nextInt(weaponTypes.length)])));
+            }
 
             equipmentPacket.getSlotStackPairLists().write(0, equipment);
             sendPacketSafely(player, equipmentPacket);
         } catch (Exception e) {
+            sendRandomArmor(player, entityId);
         }
+    }
+
+    private static ItemStack createVirtualizedArmor(Material material) {
+        ItemStack item = new ItemStack(material);
+        Random rand = new Random();
+
+        try {
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                if (meta instanceof org.bukkit.inventory.meta.Damageable) {
+                    org.bukkit.inventory.meta.Damageable damageable = (org.bukkit.inventory.meta.Damageable) meta;
+                    int maxDurability = material.getMaxDurability();
+                    if (maxDurability > 0) {
+                        int damage = rand.nextInt(maxDurability / 5);
+                        damageable.setDamage(damage);
+                    }
+                }
+
+                Map<org.bukkit.enchantments.Enchantment, Integer> enchants = getRandomArmorEnchantments(material, rand);
+                for (Map.Entry<org.bukkit.enchantments.Enchantment, Integer> entry : enchants.entrySet()) {
+                    meta.addEnchant(entry.getKey(), entry.getValue(), true);
+                }
+
+                if (rand.nextInt(100) < 30) {
+                    try {
+                        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+                    } catch (Exception ignored) {}
+                }
+
+                if (rand.nextInt(100) < 15) {
+                    try {
+                        meta.setUnbreakable(true);
+                        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_UNBREAKABLE);
+                    } catch (Exception ignored) {}
+                }
+
+                if (rand.nextInt(100) < 20) {
+                    try {
+                        meta.setCustomModelData(rand.nextInt(1000) + 1);
+                    } catch (Exception ignored) {}
+                }
+
+                if (rand.nextInt(100) < 40) {
+                    try {
+                        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ATTRIBUTES);
+                    } catch (Exception ignored) {}
+                }
+
+                item.setItemMeta(meta);
+            }
+
+            if (useReflection && !nmsVersion.isEmpty()) {
+                item = virtualizeItemNBT(item, rand, false);
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return item;
+    }
+
+    private static ItemStack createVirtualizedWeapon(Material material) {
+        ItemStack item = new ItemStack(material);
+        Random rand = new Random();
+
+        try {
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                if (meta instanceof org.bukkit.inventory.meta.Damageable) {
+                    org.bukkit.inventory.meta.Damageable damageable = (org.bukkit.inventory.meta.Damageable) meta;
+                    int maxDurability = material.getMaxDurability();
+                    if (maxDurability > 0) {
+                        int damage = rand.nextInt(maxDurability / 4);
+                        damageable.setDamage(damage);
+                    }
+                }
+
+                Map<org.bukkit.enchantments.Enchantment, Integer> enchants = getRandomWeaponEnchantments(rand);
+                for (Map.Entry<org.bukkit.enchantments.Enchantment, Integer> entry : enchants.entrySet()) {
+                    meta.addEnchant(entry.getKey(), entry.getValue(), true);
+                }
+
+                if (rand.nextInt(100) < 25) {
+                    try {
+                        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+                    } catch (Exception ignored) {}
+                }
+
+                if (rand.nextInt(100) < 10) {
+                    try {
+                        meta.setUnbreakable(true);
+                        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_UNBREAKABLE);
+                    } catch (Exception ignored) {}
+                }
+
+                if (rand.nextInt(100) < 35) {
+                    try {
+                        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ATTRIBUTES);
+                    } catch (Exception ignored) {}
+                }
+
+                item.setItemMeta(meta);
+            }
+
+            if (useReflection && !nmsVersion.isEmpty()) {
+                item = virtualizeItemNBT(item, rand, true);
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return item;
+    }
+
+    private static Map<org.bukkit.enchantments.Enchantment, Integer> getRandomArmorEnchantments(Material material, Random rand) {
+        Map<org.bukkit.enchantments.Enchantment, Integer> enchants = new HashMap<>();
+
+        boolean isHelmet = material.name().contains("HELMET");
+        boolean isChestplate = material.name().contains("CHESTPLATE");
+        boolean isLeggings = material.name().contains("LEGGINGS");
+        boolean isBoots = material.name().contains("BOOTS");
+
+        if (rand.nextInt(100) < 75) {
+            enchants.put(org.bukkit.enchantments.Enchantment.PROTECTION_ENVIRONMENTAL, rand.nextInt(4) + 1);
+        }
+
+        if (rand.nextInt(100) < 55) {
+            enchants.put(org.bukkit.enchantments.Enchantment.DURABILITY, rand.nextInt(3) + 1);
+        }
+
+        if (rand.nextInt(100) < 45) {
+            enchants.put(org.bukkit.enchantments.Enchantment.MENDING, 1);
+        }
+
+        if (rand.nextInt(100) < 30) {
+            int protType = rand.nextInt(4);
+            switch (protType) {
+                case 0:
+                    enchants.put(org.bukkit.enchantments.Enchantment.PROTECTION_FIRE, rand.nextInt(4) + 1);
+                    break;
+                case 1:
+                    enchants.put(org.bukkit.enchantments.Enchantment.PROTECTION_EXPLOSIONS, rand.nextInt(4) + 1);
+                    break;
+                case 2:
+                    enchants.put(org.bukkit.enchantments.Enchantment.PROTECTION_PROJECTILE, rand.nextInt(4) + 1);
+                    break;
+            }
+        }
+
+        if (isHelmet) {
+            if (rand.nextInt(100) < 35) {
+                enchants.put(org.bukkit.enchantments.Enchantment.OXYGEN, rand.nextInt(3) + 1);
+            }
+            if (rand.nextInt(100) < 30) {
+                enchants.put(org.bukkit.enchantments.Enchantment.WATER_WORKER, 1);
+            }
+            if (rand.nextInt(100) < 25) {
+                try {
+                    enchants.put(org.bukkit.enchantments.Enchantment.getByName("thorns"), rand.nextInt(3) + 1);
+                } catch (Exception ignored) {}
+            }
+        }
+
+        if (isChestplate) {
+            if (rand.nextInt(100) < 20) {
+                try {
+                    enchants.put(org.bukkit.enchantments.Enchantment.getByName("thorns"), rand.nextInt(3) + 1);
+                } catch (Exception ignored) {}
+            }
+        }
+
+        if (isLeggings) {
+            if (rand.nextInt(100) < 25) {
+                try {
+                    enchants.put(org.bukkit.enchantments.Enchantment.getByName("thorns"), rand.nextInt(3) + 1);
+                } catch (Exception ignored) {}
+            }
+        }
+
+        if (isBoots) {
+            if (rand.nextInt(100) < 45) {
+                enchants.put(org.bukkit.enchantments.Enchantment.PROTECTION_FALL, rand.nextInt(4) + 1);
+            }
+            if (rand.nextInt(100) < 40) {
+                enchants.put(org.bukkit.enchantments.Enchantment.DEPTH_STRIDER, rand.nextInt(3) + 1);
+            }
+            if (rand.nextInt(100) < 20) {
+                try {
+                    enchants.put(org.bukkit.enchantments.Enchantment.getByName("soul_speed"), rand.nextInt(3) + 1);
+                } catch (Exception ignored) {}
+            }
+            if (rand.nextInt(100) < 15) {
+                try {
+                    enchants.put(org.bukkit.enchantments.Enchantment.getByName("frost_walker"), rand.nextInt(2) + 1);
+                } catch (Exception ignored) {}
+            }
+        }
+
+        return enchants;
+    }
+
+    private static Map<org.bukkit.enchantments.Enchantment, Integer> getRandomWeaponEnchantments(Random rand) {
+        Map<org.bukkit.enchantments.Enchantment, Integer> enchants = new HashMap<>();
+
+        if (rand.nextInt(100) < 70) {
+            enchants.put(org.bukkit.enchantments.Enchantment.DAMAGE_ALL, rand.nextInt(5) + 1);
+        }
+
+        if (rand.nextInt(100) < 50) {
+            enchants.put(org.bukkit.enchantments.Enchantment.DURABILITY, rand.nextInt(3) + 1);
+        }
+
+        if (rand.nextInt(100) < 40) {
+            enchants.put(org.bukkit.enchantments.Enchantment.MENDING, 1);
+        }
+
+        if (rand.nextInt(100) < 35) {
+            int dmgType = rand.nextInt(3);
+            switch (dmgType) {
+                case 0:
+                    enchants.put(org.bukkit.enchantments.Enchantment.DAMAGE_ARTHROPODS, rand.nextInt(5) + 1);
+                    break;
+                case 1:
+                    enchants.put(org.bukkit.enchantments.Enchantment.DAMAGE_UNDEAD, rand.nextInt(5) + 1);
+                    break;
+            }
+        }
+
+        if (rand.nextInt(100) < 45) {
+            enchants.put(org.bukkit.enchantments.Enchantment.LOOT_BONUS_MOBS, rand.nextInt(3) + 1);
+        }
+
+        if (rand.nextInt(100) < 30) {
+            enchants.put(org.bukkit.enchantments.Enchantment.FIRE_ASPECT, rand.nextInt(2) + 1);
+        }
+
+        if (rand.nextInt(100) < 25) {
+            enchants.put(org.bukkit.enchantments.Enchantment.KNOCKBACK, rand.nextInt(2) + 1);
+        }
+
+        if (rand.nextInt(100) < 20) {
+            try {
+                enchants.put(org.bukkit.enchantments.Enchantment.getByName("sweeping"), rand.nextInt(3) + 1);
+            } catch (Exception ignored) {}
+        }
+
+        return enchants;
+    }
+
+    private static ItemStack virtualizeItemNBT(ItemStack item, Random rand, boolean isWeapon) {
+        try {
+            Class<?> craftItemStackClass = getCraftBukkitClass("inventory.CraftItemStack");
+            Method asNMSCopyMethod = craftItemStackClass.getMethod("asNMSCopy", ItemStack.class);
+            Method asBukkitCopyMethod = craftItemStackClass.getMethod("asBukkitCopy", getNMSClass("ItemStack"));
+
+            Object nmsItem = asNMSCopyMethod.invoke(null, item);
+
+            if (nmsItem != null) {
+                Class<?> nmsItemClass = nmsItem.getClass();
+                Method getOrCreateTagMethod = null;
+                Method getTagMethod = null;
+                Method setTagMethod = null;
+
+                try {
+                    getOrCreateTagMethod = nmsItemClass.getMethod("getOrCreateTag");
+                } catch (NoSuchMethodException e) {
+                    try {
+                        getTagMethod = nmsItemClass.getMethod("getTag");
+                        setTagMethod = nmsItemClass.getMethod("setTag", getNMSClass("NBTTagCompound"));
+                    } catch (Exception ignored) {}
+                }
+
+                Object nbtTag = null;
+                if (getOrCreateTagMethod != null) {
+                    nbtTag = getOrCreateTagMethod.invoke(nmsItem);
+                } else if (getTagMethod != null) {
+                    nbtTag = getTagMethod.invoke(nmsItem);
+                    if (nbtTag == null) {
+                        Class<?> nbtTagCompoundClass = getNMSClass("NBTTagCompound");
+                        nbtTag = nbtTagCompoundClass.newInstance();
+                    }
+                }
+
+                if (nbtTag != null) {
+                    Class<?> nbtTagCompoundClass = nbtTag.getClass();
+
+                    Method setIntMethod = nbtTagCompoundClass.getMethod("setInt", String.class, int.class);
+                    Method setStringMethod = nbtTagCompoundClass.getMethod("setString", String.class, String.class);
+                    Method setBooleanMethod = null;
+                    try {
+                        setBooleanMethod = nbtTagCompoundClass.getMethod("setBoolean", String.class, boolean.class);
+                    } catch (Exception ignored) {}
+
+                    setIntMethod.invoke(nbtTag, "RepairCost", rand.nextInt(10) + 1);
+
+                    if (rand.nextInt(100) < 20) {
+                        setIntMethod.invoke(nbtTag, "HideFlags", rand.nextInt(127) + 1);
+                    }
+
+                    if (rand.nextInt(100) < 15) {
+                        setIntMethod.invoke(nbtTag, "CustomModelData", rand.nextInt(500) + 1);
+                    }
+
+                    if (rand.nextInt(100) < 25 && setBooleanMethod != null) {
+                        setBooleanMethod.invoke(nbtTag, "Unbreakable", true);
+                    }
+
+                    addAttributeModifiers(nbtTag, item.getType(), rand, isWeapon);
+
+                    if (setTagMethod != null) {
+                        setTagMethod.invoke(nmsItem, nbtTag);
+                    }
+                }
+
+                item = (ItemStack) asBukkitCopyMethod.invoke(null, nmsItem);
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return item;
+    }
+
+    private static void addAttributeModifiers(Object nbtTag, Material material, Random rand, boolean isWeapon) {
+        try {
+            Class<?> nbtTagCompoundClass = nbtTag.getClass();
+            Class<?> nbtTagListClass = getNMSClass("NBTTagList");
+
+            Method setMethod = nbtTagCompoundClass.getMethod("set", String.class, getNMSClass("NBTBase"));
+            Object attributeList = nbtTagListClass.newInstance();
+            Method addMethod = nbtTagListClass.getMethod("add", int.class, getNMSClass("NBTBase"));
+
+            if (isWeapon) {
+                Object damageModifier = createAttributeModifier("generic.attackDamage",
+                        rand.nextDouble() * 3 + 5, rand);
+                addMethod.invoke(attributeList, 0, damageModifier);
+
+                Object speedModifier = createAttributeModifier("generic.attackSpeed",
+                        rand.nextDouble() * 0.5 + 1.5, rand);
+                addMethod.invoke(attributeList, 1, speedModifier);
+            } else {
+                String armorType = material.name().toLowerCase();
+                double armorValue = 0;
+                double toughnessValue = 0;
+
+                if (armorType.contains("diamond")) {
+                    armorValue = rand.nextDouble() * 1 + 2;
+                    toughnessValue = rand.nextDouble() * 0.5 + 1.5;
+                } else if (armorType.contains("netherite")) {
+                    armorValue = rand.nextDouble() * 1 + 3;
+                    toughnessValue = rand.nextDouble() * 1 + 2.5;
+                } else if (armorType.contains("iron")) {
+                    armorValue = rand.nextDouble() * 0.5 + 1.5;
+                    toughnessValue = rand.nextDouble() * 0.3;
+                }
+
+                if (armorValue > 0) {
+                    Object armorModifier = createAttributeModifier("generic.armor", armorValue, rand);
+                    addMethod.invoke(attributeList, 0, armorModifier);
+                }
+
+                if (toughnessValue > 0) {
+                    Object toughnessModifier = createAttributeModifier("generic.armorToughness", toughnessValue, rand);
+                    addMethod.invoke(attributeList, 1, toughnessModifier);
+                }
+
+                if (armorType.contains("boots") && rand.nextInt(100) < 30) {
+                    Object movementModifier = createAttributeModifier("generic.movementSpeed",
+                            rand.nextDouble() * 0.01 + 0.01, rand);
+                    addMethod.invoke(attributeList, 2, movementModifier);
+                }
+            }
+
+            if (attributeList != null) {
+                setMethod.invoke(nbtTag, "AttributeModifiers", attributeList);
+            }
+
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static Object createAttributeModifier(String attributeName, double amount, Random rand) {
+        try {
+            Class<?> nbtTagCompoundClass = getNMSClass("NBTTagCompound");
+            Object modifier = nbtTagCompoundClass.newInstance();
+
+            Method setStringMethod = nbtTagCompoundClass.getMethod("setString", String.class, String.class);
+            Method setDoubleMethod = nbtTagCompoundClass.getMethod("setDouble", String.class, double.class);
+            Method setIntMethod = nbtTagCompoundClass.getMethod("setInt", String.class, int.class);
+
+            Method setIntArrayMethod = nbtTagCompoundClass.getMethod("setIntArray", String.class, int[].class);
+
+            UUID uuid = UUID.randomUUID();
+            long mostSigBits = uuid.getMostSignificantBits();
+            long leastSigBits = uuid.getLeastSignificantBits();
+            int[] uuidArray = new int[] {
+                    (int)(mostSigBits >> 32),
+                    (int)mostSigBits,
+                    (int)(leastSigBits >> 32),
+                    (int)leastSigBits
+            };
+
+            setStringMethod.invoke(modifier, "AttributeName", attributeName);
+            setStringMethod.invoke(modifier, "Name", attributeName);
+            setDoubleMethod.invoke(modifier, "Amount", amount);
+            setIntMethod.invoke(modifier, "Operation", 0);
+            setIntArrayMethod.invoke(modifier, "UUID", uuidArray);
+
+            String[] slots = {"mainhand", "offhand", "feet", "legs", "chest", "head"};
+            setStringMethod.invoke(modifier, "Slot", slots[rand.nextInt(slots.length)]);
+
+            return modifier;
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Class<?> getNMSClass(String className) throws ClassNotFoundException {
+        if (nmsVersion.isEmpty()) {
+            return Class.forName("net.minecraft." + className);
+        }
+        try {
+            return Class.forName("net.minecraft.server." + nmsVersion + "." + className);
+        } catch (ClassNotFoundException e) {
+            return Class.forName("net.minecraft." + className);
+        }
+    }
+
+    private static Class<?> getCraftBukkitClass(String className) throws ClassNotFoundException {
+        return Class.forName("org.bukkit.craftbukkit." + nmsVersion + "." + className);
     }
 
     private static void addPlayerToTabList(Player player, WrappedGameProfile profile, String name) {
@@ -250,7 +749,7 @@ public class NpcManager {
             );
             packet.getPlayerInfoDataLists().write(0, dataList);
             sendPacketSafely(player, packet);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
     }
 
@@ -284,14 +783,9 @@ public class NpcManager {
     private static void spawnPlayerEntity(Player player, int entityId, WrappedGameProfile profile, Location loc) {
         final double[] minDistance = {3.5};
         final double[] distance = {35.0};
-//        if (rotationMode == RotationMode.SMART) {
-//            loc = getSmartBehindPlayer(player,distance[0]);
-//        } else {
-//            loc = getBehindPlayer(player,distance[0]);
-//        }
         if (spawnMode.equals(RotationMode.SMART)
                 || spawnMode.equals(RotationMode.NEW)) {
-            loc = getBehindPlayer(player,distance[0]);
+            loc = getBehindPlayer(player, distance[0]);
         }
         PacketContainer spawn = new PacketContainer(PacketType.Play.Server.NAMED_ENTITY_SPAWN);
         spawn.getSpecificModifier(int.class).write(0, entityId);
@@ -310,14 +804,14 @@ public class NpcManager {
                     @Override
                     public void run() {
                         distance[0] -= 0.56;
-                        teleportNpc(player,npc,distance[0]);
+                        teleportNpc(player, npc, distance[0]);
                         if (distance[0] <= minDistance[0]) {
                             this.cancel();
                             npc.locatedToPlayer = true;
                             return;
                         }
                     }
-                }.runTaskTimer(plugin,2L,1L);
+                }.runTaskTimer(plugin, 2L, 1L);
             }
         } else {
             sendPacketSafely(player, spawn);
@@ -371,36 +865,35 @@ public class NpcManager {
                                     }
                                 }
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
         );
     }
 
-    private static void startUpdater() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                long now = System.currentTimeMillis();
-                Iterator<Map.Entry<UUID, TrackedNpc>> it = npcMap.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry<UUID, TrackedNpc> entry = it.next();
-                    UUID playerId = entry.getKey();
-                    TrackedNpc npc = entry.getValue();
-                    Player player = Bukkit.getPlayer(playerId);
-                    if (player == null || !player.isOnline()) {
-                        it.remove();
-                        continue;
-                    }
-                    if (now - npc.lastUsed > TIMEOUT_MS) {
-                        destroyNpc(player, npc.entityId);
-                        it.remove();
-                        continue;
-                    }
-                    updateNpcPosition(player, npc);
+    public static void startUpdater() {
+        if (updater != null) updater.cancel();
+        updater = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            long now = System.currentTimeMillis();
+            Iterator<Map.Entry<UUID, TrackedNpc>> it = npcMap.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<UUID, TrackedNpc> entry = it.next();
+                UUID playerId = entry.getKey();
+                TrackedNpc npc = entry.getValue();
+                Player player = Bukkit.getPlayer(playerId);
+                if (player == null || !player.isOnline()) {
+                    it.remove();
+                    continue;
                 }
+                if (now - npc.lastUsed > TIMEOUT_MS) {
+                    destroyNpc(player, npc.entityId);
+                    it.remove();
+                    continue;
+                }
+                updateNpcPosition(player, npc);
             }
-        }.runTaskTimer(plugin, updateTicks, updateTicks);
+        }, updateTicks, updateTicks);
     }
 
     public static void destroyNpc(Player player, int entityId) {
@@ -419,7 +912,7 @@ public class NpcManager {
                         try {
                             destroy.getSpecificModifier(int[].class).write(0, new int[]{entityId});
                         } catch (Exception e3) {
-                            plugin.getLogger().info("error [Destroy-Npc] : "+e3.getMessage());
+                            plugin.getLogger().info("error [Destroy-Npc] : " + e3.getMessage());
                         }
                     }
                 }
@@ -427,20 +920,31 @@ public class NpcManager {
                 try {
                     destroy.getSpecificModifier(int[].class).write(0, new int[]{entityId});
                 } catch (Exception e4) {
-                    plugin.getLogger().info("error [Destroy-Npc] : "+e4.getMessage());
+                    plugin.getLogger().info("error [Destroy-Npc] : " + e4.getMessage());
                 }
             }
 
             sendPacketSafely(player, destroy);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void handShake(Player player, int entityId, int animationType) {
+        try {
+            PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.ANIMATION);
+            packet.getIntegers().write(0, entityId);
+            packet.getIntegers().write(1, animationType);
+            ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+        } catch (Exception ignored) {
+        }
     }
 
     private static void teleportNpc(Player player, TrackedNpc npc, double distance) {
         Location newLoc;
         if (rotationMode == RotationMode.SMART) {
-            newLoc = getSmartBehindPlayer(player,35.0);
+            newLoc = getSmartBehindPlayer(player, 35.0);
         } else {
-            newLoc = getBehindPlayer(player,35.0);
+            newLoc = getBehindPlayer(player, 35.0);
         }
         Location oldLoc = npc.lastLocation;
         if (shouldUpdateLocation(oldLoc, newLoc)) {
@@ -459,22 +963,71 @@ public class NpcManager {
                 }
             }
 
-            PacketContainer tp = new PacketContainer(PacketType.Play.Server.ENTITY_TELEPORT);
-            tp.getSpecificModifier(int.class).write(0, npc.entityId);
-            tp.getSpecificModifier(double.class).write(0, newLoc.getX());
-            tp.getSpecificModifier(double.class).write(1, newLoc.getY());
-            tp.getSpecificModifier(double.class).write(2, newLoc.getZ());
-            tp.getSpecificModifier(byte.class).write(0, (byte) (newLoc.getYaw() * 256.0F / 360.0F));
-            tp.getSpecificModifier(byte.class).write(1, (byte) (newLoc.getPitch() * 256.0F / 360.0F));
-            if (isNewestVersion) {
-                try {
-                    tp.getBooleans().write(0, true);
-                } catch (Exception ignored) {}
-            }
-            sendPacketSafely(player, tp);
-            rotateHead(player, npc.entityId, newLoc);
+            sendTeleportPacket(player, npc, newLoc);
             npc.lastLocation = newLoc.clone();
         }
+    }
+
+    private static void startSmoothMovement(Player player, TrackedNpc npc, Location targetLoc) {
+        npc.isSmooth = true;
+        npc.targetLocation = targetLoc.clone();
+        npc.smoothStartLocation = npc.lastLocation.clone();
+        npc.smoothCurrentTick = 0;
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!player.isOnline() || !npcMap.containsKey(player.getUniqueId())) {
+                    npc.isSmooth = false;
+                    this.cancel();
+                    return;
+                }
+
+                npc.smoothCurrentTick++;
+
+                if (npc.smoothCurrentTick >= smoothAim_Duration) {
+                    sendTeleportPacket(player, npc, npc.targetLocation);
+                    npc.lastLocation = npc.targetLocation.clone();
+                    npc.isSmooth = false;
+                    this.cancel();
+                    return;
+                }
+
+                double progress = (double) npc.smoothCurrentTick / smoothAim_Duration;
+                Location currentLoc = interpolateLocation(npc.smoothStartLocation, npc.targetLocation, progress);
+
+                sendTeleportPacket(player, npc, currentLoc);
+                npc.lastLocation = currentLoc.clone();
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private static Location interpolateLocation(Location start, Location end, double progress) {
+        Location result = start.clone();
+        result.setX(start.getX() + (end.getX() - start.getX()) * progress);
+        result.setY(start.getY() + (end.getY() - start.getY()) * progress);
+        result.setZ(start.getZ() + (end.getZ() - start.getZ()) * progress);
+        result.setYaw((float) (start.getYaw() + angleDifference(end.getYaw(), start.getYaw()) * progress));
+        result.setPitch((float) (start.getPitch() + (end.getPitch() - start.getPitch()) * progress));
+        return result;
+    }
+
+    private static void sendTeleportPacket(Player player, TrackedNpc npc, Location loc) {
+        PacketContainer tp = new PacketContainer(PacketType.Play.Server.ENTITY_TELEPORT);
+        tp.getSpecificModifier(int.class).write(0, npc.entityId);
+        tp.getSpecificModifier(double.class).write(0, loc.getX());
+        tp.getSpecificModifier(double.class).write(1, loc.getY());
+        tp.getSpecificModifier(double.class).write(2, loc.getZ());
+        tp.getSpecificModifier(byte.class).write(0, (byte) (loc.getYaw() * 256.0F / 360.0F));
+        tp.getSpecificModifier(byte.class).write(1, (byte) (loc.getPitch() * 256.0F / 360.0F));
+        if (isNewestVersion) {
+            try {
+                tp.getBooleans().write(0, true);
+            } catch (Exception ignored) {
+            }
+        }
+        sendPacketSafely(player, tp);
+        rotateHead(player, npc.entityId, loc);
     }
 
     private static void updateNpcPosition(Player player, TrackedNpc npc) {
@@ -490,8 +1043,21 @@ public class NpcManager {
         }
 
         Location oldLoc = npc.lastLocation;
+        long now = System.currentTimeMillis();
         if (shouldUpdateLocation(oldLoc, newLoc)) {
+            if (smoothAim_Enabled && !npc.isSmooth) {
+                startSmoothMovement(player, npc, newLoc);
+                return;
+            }
+
             if (rotationMode == RotationMode.SMART && Math.random() < 0.1) {
+                if (handShake_Enabled) {
+                    long random = new Random().nextInt(handShake_add);
+                    if (now - npc.handShake > (handShake_diff + random)) {
+                        handShake(player, npc.entityId, 0);
+                        npc.handShake = now;
+                    }
+                }
                 npc.isJumping = true;
                 npc.jumpStartTime = System.currentTimeMillis();
             }
@@ -506,21 +1072,30 @@ public class NpcManager {
                 }
             }
 
-            PacketContainer tp = new PacketContainer(PacketType.Play.Server.ENTITY_TELEPORT);
-            tp.getSpecificModifier(int.class).write(0, npc.entityId);
-            tp.getSpecificModifier(double.class).write(0, newLoc.getX());
-            tp.getSpecificModifier(double.class).write(1, newLoc.getY());
-            tp.getSpecificModifier(double.class).write(2, newLoc.getZ());
-            tp.getSpecificModifier(byte.class).write(0, (byte) (newLoc.getYaw() * 256.0F / 360.0F));
-            tp.getSpecificModifier(byte.class).write(1, (byte) (newLoc.getPitch() * 256.0F / 360.0F));
-            if (isNewestVersion) {
-                try {
-                    tp.getBooleans().write(0, true);
-                } catch (Exception ignored) {}
-            }
-            sendPacketSafely(player, tp);
-            rotateHead(player, npc.entityId, newLoc);
+            double distance = newLoc.distance(player.getLocation());
+            npc.isPhantom = distance < 1.5;
+
+            sendTeleportPacket(player, npc, newLoc);
             npc.lastLocation = newLoc.clone();
+
+            if (npc.isPhantom) {
+                makeNpcPhantom(player, npc.entityId);
+            }
+        }
+    }
+
+    private static void makeNpcPhantom(Player player, int entityId) {
+        try {
+            PacketContainer packet = new PacketContainer(PacketType.Play.Server.ENTITY_METADATA);
+            packet.getIntegers().write(0, entityId);
+
+            List<WrappedWatchableObject> metadata = new ArrayList<>();
+
+            metadata.add(new WrappedWatchableObject(0, (byte) 0x20));
+
+            packet.getWatchableCollectionModifier().write(0, metadata);
+            sendPacketSafely(player, packet);
+        } catch (Exception ignored) {
         }
     }
 
@@ -603,7 +1178,7 @@ public class NpcManager {
         for (int attempts = 0; attempts < 8; attempts++) {
             Location testLoc = calculateBehindLocation(player, 2.5, attempts);
 
-            if (isLocationSuitable(world, testLoc, playerLoc,50)) {
+            if (isLocationSuitable(world, testLoc, playerLoc, 50)) {
                 return testLoc;
             }
         }
@@ -618,7 +1193,7 @@ public class NpcManager {
         for (int attempts = 0; attempts < 8; attempts++) {
             Location testLoc = calculateBehindLocation(player, distance, attempts);
 
-            if (isLocationSuitable(world, testLoc, playerLoc,50)) {
+            if (isLocationSuitable(world, testLoc, playerLoc, 50)) {
                 return testLoc;
             }
         }
@@ -633,7 +1208,7 @@ public class NpcManager {
         for (int attempts = 0; attempts < 8; attempts++) {
             Location testLoc = calculateBehindLocationWithOffset(player, distance, offsetX, offsetZ, attempts);
 
-            if (isLocationSuitable(world, testLoc, playerLoc,50)) {
+            if (isLocationSuitable(world, testLoc, playerLoc, 50)) {
                 return testLoc;
             }
         }
@@ -859,6 +1434,10 @@ public class NpcManager {
         DEFAULT, SMART, NEW
     }
 
+    public enum AimMode {
+        OLD, NEW, MIDDLE
+    }
+
     public static class TrackedNpc {
         public final int entityId;
         public final WrappedGameProfile profile;
@@ -868,6 +1447,13 @@ public class NpcManager {
         public long jumpStartTime = 0;
 
         public boolean locatedToPlayer = false;
+        public long handShake = 0;
+        public boolean isPhantom = false;
+
+        public boolean isSmooth = false;
+        public Location targetLocation;
+        public Location smoothStartLocation;
+        public int smoothCurrentTick = 0;
 
         public TrackedNpc(int entityId, WrappedGameProfile profile, long lastUsed) {
             this.entityId = entityId;

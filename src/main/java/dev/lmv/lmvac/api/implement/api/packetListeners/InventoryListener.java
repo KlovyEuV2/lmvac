@@ -5,6 +5,7 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.ListeningWhitelist;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.events.PacketListener;
+import com.comphenix.protocol.injector.temporary.TemporaryPlayer;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -15,7 +16,7 @@ public class InventoryListener implements PacketListener {
     public static int iMoves = 5;
     public static boolean updClose = true;
     public InventoryListener(Plugin plugin) {
-        this.plugin = plugin;
+        InventoryListener.plugin = plugin;
         ProtocolLibrary.getProtocolManager().addPacketListener(this);
         reload();
     }
@@ -30,9 +31,10 @@ public class InventoryListener implements PacketListener {
         }
     }
     @Override
-    public void onPacketSending(PacketEvent packetEvent) {
-        Player player = packetEvent.getPlayer();
-        PacketType type = packetEvent.getPacketType();
+    public void onPacketSending(PacketEvent event) {
+        if (event.getPlayer() == null || !event.getPlayer().isOnline() || (event.getPlayer() instanceof TemporaryPlayer)) return;
+        Player player = event.getPlayer();
+        PacketType type = event.getPacketType();
 
         int id = player.getEntityId();
         LmvPlayer client = LmvPlayer.players.get(id);
@@ -62,6 +64,7 @@ public class InventoryListener implements PacketListener {
 
     @Override
     public void onPacketReceiving(PacketEvent packetEvent) {
+        if (packetEvent.getPlayer() == null || !packetEvent.getPlayer().isOnline() || (packetEvent.getPlayer() instanceof TemporaryPlayer)) return;
         Player player = packetEvent.getPlayer();
         PacketType type = packetEvent.getPacketType();
 

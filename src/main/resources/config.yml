@@ -1,9 +1,11 @@
-main-prefix: "&#FBAF08&lɢ&#FB9E0F&lʟ&#FB8D15&lɪ&#FB7D1C&lᴅ&#FB6C22&lᴇ&#FB5B29&lᴀ&#FB5B29&lᴄ&#FB5B29&l: &r"
+main-prefix: "&#FA872A&lʟ&#FA7D2A&lᴍ&#FB732A&lᴠ&#FB692A&lᴀ&#FC5F2A&lᴄ&#FC552A&l: &r"
 vl-remove-time: 4775
 time-without-alert: 2085
 
 notification:
   advertising: true # Ну тут небольшая реклама при входе. ;), можете отрубить. (Пишет только тем у кого есть право lmvac.notify.advertising)
+
+save-data: true # player-data.yml
 
 # ru_ru, en_us
 locale: ru_ru
@@ -36,6 +38,7 @@ punish:
     - "gamemode"
     - "plugman"
     - "op "
+    - "deop "
     - "lp "
 
 # Permissions/Права:
@@ -67,24 +70,68 @@ punish:
 look:
   savePT: 20
 
+aimML:
+  per-ticks: 5
+  threshold: 0.75
+  min-diffs: 0.0001
+  min-movement-threshold: 5.0
+  significant-movement-threshold: 15.0
+  consistency-threshold: 0.6
+  punish-commands:
+    - "kick %player% &cAimML"
+  vl:
+    alerts: 5
+    per-detect: 5
+    punishment: 100
+    reset: 600
+    cooldown: 40
+  analyze:
+    min-snapshots: 30
+  target:
+    max-distance: 6
+    looking-threshold: 0.8
+  min-snapshots: 50
+
 # Тут настройки AimNpc.
 npc:
   strafe: true
   timeout: 3000
-  armor-chane: 70
+  armor-virtualization: true
+  armor-chane: 60
   rotation-mode: smart # smart / default
   rotation-update: 2 # в тиках
   spawn-mode: smart
   aim-mode: old # old / new \ middle
+  smooth-aim:
+    enabled: true
+    per-ticks: 1 # если ансофт могут бить/мешает пвп, ставьте 1/отрубайте
   pattern:
     look: 9
     smooth: -1
     default: 5
-  random: # tab / config
-    mode: TAB
-  names: "akvi4;IIuoner;Error404;M7trix;bmw3000;repeat3000;gercog228;EllO1;RErEreo;OreO3020;OrEo998;MenTos3021;Cola3029;Pepsi1023;Elonmusk300;Pr302er;moderator1029;moder392;shipuchka228;Pon30928;KIllka392;Penit3000;hlebushek9;vmer23900;wwwxyz;LoopRepeat;Mann3029;Eplka302r"
+  hand-shake:
+    enabled: true
+    min-diff: 580
+    random-add: 50
+  random: # tab / config / random
+    mode: RANDOM
+    chance:
+      TAB: 100.0
+      CONFIG: 30.0
+      RANDOM: 50.0
+    max-name: 16
+  names: "akvi4;IIuoner;Error404;M7trix;bmwM5_;repeat_w;gercogTop_;EllO1w;RErEreo;OreOb;RrP;mNbPPT;ColaPeps;PepsiCd;BanNaIvente;Privetik_;neModer_;privet_;bustw;killka_;KIllka;PenitB;autoTotem;InvMror;wwwxyz;LoopRepeat;Mannwy;mnba30d"
 
 checks:
+  autoclicker:
+    PacketSpamA: # Inventory
+      clicks: 20
+      per: 1000 # ms
+    ClickSpamA: # Inventory
+      diff: 30 # ms
+  badpackets:
+    b:
+      velocity-y: -999.0 # Velocity-y при флаге(визуализация клиентского-флага, пакеты все-равно отменяет.)
   packetorder:
     a:
       max-ping: 929
@@ -94,6 +141,16 @@ checks:
       sprint: 500 # рек. не ниже 500 и не выше 1000.
     e:
       cancel-moves: 5 # не рек. ставить ниже 5. (лучше ост 5(def).) (самый минимум - 3. от ложных.)
+      packets: # Тут указываем пакеты которые будет слушать(детектить)
+        - LOOK
+        # - POSITION_LOOK
+        # - ENTITY_ACTION
+        - USE_ENTITY
+        - BLOCK_DIG
+        - BLOCK_PLACE
+        - HELD_ITEM_SLOT
+        - USE_ITEM
+        - WINDOW_CLICK
     f:
       cancel-moves: 3 # не рек. ставить ниже 2-3. (лучше ост 5(def).)
     g: # проверка на пакеты которые игрок не может кидать в инвентаре за последние 50 мс
@@ -109,10 +166,14 @@ checks:
     - ModerSpoof
     - ClickSpamA
     - PacketOrderA
+    - BadPacketsB # Тест HighJumpShulker
+    - AimML
+    - AutoFishA
+    - PacketTimer
   visual:
     checks:
       a: # esp(metaView)
-        enabled: true
+        health-only-invisible: true
         hide:
           health: true            # Убирает здоровье (index 8 — здоровье сущности)
           effects: true           # Убирает все эффекты зелий (включая ENTITY_EFFECT)

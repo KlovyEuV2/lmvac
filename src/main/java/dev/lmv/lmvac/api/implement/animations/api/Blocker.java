@@ -30,7 +30,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
 public class Blocker implements Listener {
-   public static final ConcurrentHashMap players = new ConcurrentHashMap();
+   public static final ConcurrentHashMap<Object, Object> players = new ConcurrentHashMap<>();
    private static Plugin plugin;
 //   private static final double MIN_MOVEMENT_THRESHOLD = 0.001;
 

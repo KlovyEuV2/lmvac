@@ -84,7 +84,7 @@ public class PacketTimer extends Check implements BukkitCheck, PacketCheck {
                             plus += 0.63;
                         }
 
-                        if (this.hasMovedEnough(player) && avgPacketsPerSecond > 20.0 + plus && avgPacketsPerSecond > 0.0) {
+                        if (this.hasMovedEnough(player) && avgPacketsPerSecond > 20.0 + plus) {
                             int id = player.getEntityId();
                             LmvPlayer targetPlayer = LmvPlayer.players.get(id);
                             if (targetPlayer == null) {
@@ -99,6 +99,7 @@ public class PacketTimer extends Check implements BukkitCheck, PacketCheck {
                             if (Bukkit.getServer().getTPS()[0] > 18.6) {
                                 if (!this.isShutdown && plugin.isEnabled()) {
                                     Bukkit.getScheduler().runTask(LmvAC.getInstance(), () -> {
+                                        if (!player.isOnline()) return;
                                         if (!this.isShutdown) {
                                             this.flag(player);
                                         }
@@ -168,9 +169,8 @@ public class PacketTimer extends Check implements BukkitCheck, PacketCheck {
                         return;
                     }
 
-                    boolean shouldCancel = true;
                     int maxSize = 10;
-                    if (shouldCancel && list.size() > maxSize) {
+                    if (list.size() > maxSize) {
                         event.setCancelled(true);
                     }
                 }
@@ -217,18 +217,7 @@ public class PacketTimer extends Check implements BukkitCheck, PacketCheck {
         }
     }
 
-    public void onPacketSending(PacketEvent event) {
-    }
-
-    public ListeningWhitelist getSendingWhitelist() {
-        return ListeningWhitelist.newBuilder().build();
-    }
-
     public ListeningWhitelist getReceivingWhitelist() {
-        return ListeningWhitelist.newBuilder().types(new PacketType[]{Client.POSITION}).build();
-    }
-
-    public Plugin getPlugin() {
-        return LmvAC.getInstance();
+        return ListeningWhitelist.newBuilder().types(Client.POSITION).build();
     }
 }

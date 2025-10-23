@@ -6,6 +6,7 @@ import com.comphenix.protocol.events.PacketEvent;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import dev.lmv.lmvac.api.implement.api.settings.LocaleManager;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
@@ -21,7 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 // Много-кратные быстрые и резкие клики после сброса спринта
 @SettingCheck(
         value = "InventoryC",
-        cooldown = Cooldown.NO_COOLDOWN
+        cooldown = Cooldown.NO_COOLDOWN,
+        descType = DescType.RELEASE
 )
 public class InventoryC extends Check implements PacketCheck {
     public InventoryC(Plugin plugin) {

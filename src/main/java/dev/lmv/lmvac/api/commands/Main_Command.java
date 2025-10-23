@@ -1,7 +1,10 @@
 
 package dev.lmv.lmvac.api.commands;
 
+import dev.lmv.lmvac.LmvAC;
 import dev.lmv.lmvac.api.ConfigManager;
+import dev.lmv.lmvac.api.implement.ai.AimAIDetector;
+import dev.lmv.lmvac.api.implement.ai.listener.*;
 import dev.lmv.lmvac.api.implement.animations.DefaultAnimation;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import dev.lmv.lmvac.api.implement.api.npcs.NpcManager;
@@ -9,23 +12,24 @@ import dev.lmv.lmvac.api.implement.api.packetListeners.InventoryListener;
 import dev.lmv.lmvac.api.implement.api.settings.LocaleManager;
 import dev.lmv.lmvac.api.implement.checks.other.CheckManager;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.modutils.AlertsManager;
 import dev.lmv.lmvac.api.implement.themes.ThemeManager;
 import dev.lmv.lmvac.api.implement.utils.data.PlayerDataManager;
 import dev.lmv.lmvac.api.implement.utils.punishments.Punishments;
 import dev.lmv.lmvac.api.implement.utils.text.ColorUtil;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import dev.lmv.lmvac.api.modules.checks.aim.AimNpc;
+import dev.lmv.lmvac.api.modules.checks.autoclicker.inventory.ClickSpamA;
+import dev.lmv.lmvac.api.modules.checks.autoclicker.packet.PacketSpamA;
+import dev.lmv.lmvac.api.modules.checks.badpackets.other.BadPacketsB;
 import dev.lmv.lmvac.api.modules.checks.inventory.InventoryC;
+import dev.lmv.lmvac.api.modules.checks.inventory.InventoryE;
 import dev.lmv.lmvac.api.modules.checks.inventory.InventoryF;
 import dev.lmv.lmvac.api.modules.checks.inventory.InventoryG;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -123,6 +127,12 @@ public class Main_Command implements CommandExecutor, TabCompleter {
                         sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cНе удалось переключить уведомления!"));
                         return false;
                     }
+                case "loadplayer":
+                    if (handleLoadPlayer(sender, args)) {
+                        return true;
+                    }
+                    sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cНе удалось загрузить профиль игрока!"));
+                    return false;
                 case "ban":
                     if (handleBan(sender, args)) {
                         return true;
@@ -167,7 +177,7 @@ public class Main_Command implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("lmvac.npc.spawn")) {
             sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на просмотр списка чеков!"));
             return false;
-        } else {
+        } else if (args.length>=2) {
             String targetName = args[1];
             String vanish = args[args.length-1];
             Player target = Bukkit.getPlayer(targetName);
@@ -191,6 +201,9 @@ public class Main_Command implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ColorUtil.setColorCodes(""));
             }
             return true;
+        } else {
+            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix+"&cВы не указали ник игрока!"));
+            return false;
         }
     }
 
@@ -198,25 +211,61 @@ public class Main_Command implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("lmvac.admin")) {
             sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на просмотр списка чеков!"));
             return false;
-        } else {
-            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&8Список проверок античита : "));
-            sender.sendMessage(ColorUtil.setColorCodes(""));
-
-            for (Check check : CheckManager.getChecks()) {
-                if (check.isEnabled()) {
-                    sender.sendMessage(ColorUtil.setColorCodes(" &a" + check.getName()));
-                }
-            }
-
-            for (Check check : CheckManager.getChecks()) {
-                if (!check.isEnabled()) {
-                    sender.sendMessage(ColorUtil.setColorCodes(" &8" + check.getName()));
-                }
-            }
-
-            sender.sendMessage(ColorUtil.setColorCodes(""));
-            return true;
         }
+
+        List<DescType> typeOrder = List.of(
+                DescType.PREMIUM,
+                DescType.NEW,
+                DescType.RELEASE,
+                DescType.ALPHA,
+                DescType.BETA,
+                DescType.OLD,
+                DescType.BUG
+        );
+
+        sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&8Список проверок античита :  ("+CheckManager.checks.size()+")"));
+        sender.sendMessage(ColorUtil.setColorCodes(""));
+
+        List<Check> enabledChecks = CheckManager.getChecks().stream()
+                .filter(Check::isEnabled)
+                .collect(Collectors.toList());
+
+        List<Check> disabledChecks = CheckManager.getChecks().stream()
+                .filter(check -> !check.isEnabled())
+                .collect(Collectors.toList());
+
+        Comparator<Check> checkComparator = new Comparator<Check>() {
+            @Override
+            public int compare(Check c1, Check c2) {
+                int typeCompare = Integer.compare(typeOrder.indexOf(c1.descType), typeOrder.indexOf(c2.descType));
+                if (typeCompare != 0) {
+                    return typeCompare;
+                }
+                return c1.getName().compareToIgnoreCase(c2.getName());
+            }
+        };
+
+        enabledChecks.sort(checkComparator);
+        disabledChecks.sort(checkComparator);
+
+        for (Check check : enabledChecks) {
+            String description = (check.description == null || check.description.isEmpty()) ? "Нет описания" : check.description;
+            String color = check.descType.getColor();
+            sender.sendMessage(ColorUtil.setColorCodes(
+                    " " + color + check.getName() + " &7| " + check.descType.name().toUpperCase() + " &7| &r" + description
+            ));
+        }
+
+        if (!disabledChecks.isEmpty()) {
+            sender.sendMessage(ColorUtil.setColorCodes("&8&m---------------------"));
+            for (Check check : disabledChecks) {
+                String description = (check.description == null || check.description.isEmpty()) ? "Нет описания" : check.description;
+                sender.sendMessage(ColorUtil.setColorCodes(" &8" + check.getName() + " &7| " + description));
+            }
+        }
+
+        sender.sendMessage(ColorUtil.setColorCodes(""));
+        return true;
     }
 
     public static boolean handleBan(CommandSender sender, String[] args) {
@@ -289,6 +338,37 @@ public class Main_Command implements CommandExecutor, TabCompleter {
         }
     }
 
+    public static boolean handleLoadPlayer(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("lmvac.loadplayer")) {
+            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на загрузку игроков!"));
+            return false;
+        } else if (args.length < 2) {
+            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cИспользование: /lmvac loadplayer <игрок/(*/all)>"));
+            return false;
+        } else {
+            String targetName = args[1];
+            Player target = Bukkit.getPlayer(targetName);
+            if (target == null || !target.isOnline()) {
+                if (targetName.equals("*") || targetName.equals("all")) {
+                    Collection<? extends Player> playerList = Bukkit.getOnlinePlayers();
+                    List<LmvPlayer> loaded = new ArrayList<>();
+                    for (Player player : playerList) {
+                        LmvPlayer client = players.get(player.getEntityId());
+                        if (client == null) { client = new LmvPlayer(player); loaded.add(client); }
+                    }
+                    sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&aВы успешно загрузили профили для &f"+loaded.size()+" &aигроков!"));
+                } else {
+                    sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cИспользование: /lmvac loadplayer <игрок/(*/all)>"));
+                }
+            } else {
+                LmvPlayer client = players.get(target.getEntityId());
+                if (client == null) client = new LmvPlayer(target);
+                sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&aВы успешно загрузили профиль для игрока &f"+targetName+"!"));
+            }
+            return true;
+        }
+    }
+
     @Nullable
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
@@ -308,6 +388,9 @@ public class Main_Command implements CommandExecutor, TabCompleter {
             }
             if (sender.hasPermission("lmvac.alerts")) {
                 completions.add("alerts");
+            }
+            if (sender.hasPermission("lmvac.loadplayer")) {
+                completions.add("loadplayer");
             }
             if (sender.hasPermission("lmvac.profile")) {
                 completions.add("profile");
@@ -355,7 +438,8 @@ public class Main_Command implements CommandExecutor, TabCompleter {
                     (subCommand.equals("spec") && sender.hasPermission("lmvac.spec")) ||
                     (subCommand.equals("profile") && sender.hasPermission("lmvac.profile")) ||
                     (subCommand.equals("suspend") && sender.hasPermission("lmvac.suspend")) ||
-                    (subCommand.equals("npc") && sender.hasPermission("lmvac.npc.spawn"))) {
+                    (subCommand.equals("npc") && sender.hasPermission("lmvac.npc.spawn")) ||
+                    subCommand.equals("loadplayer") && sender.hasPermission("lmvac.npc.loadplayer")) {
 
                 return getFilteredPlayerNames(prefix, subCommand, sender);
             }
@@ -760,7 +844,7 @@ public class Main_Command implements CommandExecutor, TabCompleter {
                     }
                     int id = target.getEntityId();
                     LmvPlayer client = (LmvPlayer)LmvPlayer.players.get(id);
-                    if (client != null) {
+                    if (client != null && client.clientSettings != null) {
                         sender.sendMessage(client.clientSettings.toString());
                     }
 
@@ -771,157 +855,178 @@ public class Main_Command implements CommandExecutor, TabCompleter {
         }
     }
 
-   public static String getClientBrand(Player player) {
-      try {
-         String brand = player.getClientBrandName();
-         return brand != null && !brand.trim().isEmpty() ? brand : "&8#неизвестно";
-      } catch (Exception var2) {
-         return "&8#неизвестно";
-      }
-   }
 
-   private static boolean handleTGSet(CommandSender sender, Command command, String[] args) {
-      return true;
-   }
+    public static String getClientBrand(Player player) {
+        try {
+            String brand = player.getClientBrandName();
+            return brand != null && !brand.trim().isEmpty() ? brand : "&8#неизвестно";
+        } catch (Exception var2) {
+            return "&8#неизвестно";
+        }
+    }
 
-   private static boolean handleHelp(CommandSender sender, Command command, String[] args) {
-      if (!sender.hasPermission("lmvac.help")) {
-         sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на просмотр доступных комманд!"));
-         return false;
-      } else {
-         sender.sendMessage("");
-         sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + " &7Список доступных комманд:"));
-         sender.sendMessage(ColorUtil.setColorCodes(""));
-         sender.sendMessage(ColorUtil.setColorCodes(" &6&l| "));
-         if (sender.hasPermission("lmvac.help")) {
-            sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " help &8- &eПоказать данную помощь"));
-         }
+    private static boolean handleTGSet(CommandSender sender, Command command, String[] args) {
+        return true;
+    }
 
-          if (sender.hasPermission("lmvac.alerts")) {
-              sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " alerts &8- &eПереключить жалобы анти-чита"));
-          }
-
-         if (sender.hasPermission("lmvac.spec")) {
-            sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " spec <игрок> &8- &eПроследить за игроком"));
-         }
-
-         if (sender.hasPermission("lmvac.profile")) {
-            sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " profile <игрок> &8- &eПосмотреть профиль игрока"));
-         }
-
-         if (sender.hasPermission("lmvac.suspend")) {
-            sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " suspend <игрок> <проверка> &8- &eПосмотреть инфо о нужном чеке игрока"));
-         }
-
-          if (sender.hasPermission("lmvac.npc.spawn")) {
-              sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " npc <игрок> &8- &eЗаспавнить игроку анти-чит бота"));
-          }
-
-         if (sender.hasPermission("lmvac.ban")) {
-            sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " ban <игрок> \"команда\" &8- &eЗабанить игрока"));
-         }
-
-          if (sender.hasPermission("lmvac.admin")) {
-              sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " checks &8- &eУзнать список и информацию о проверках"));
-          }
-
-         if (sender.hasPermission("lmvac.reload")) {
-            sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " reload &8- &eПерезагрузить конфиг"));
-         }
-
-         sender.sendMessage(ColorUtil.setColorCodes(" &6&l| "));
-         sender.sendMessage("");
-         return true;
-      }
-   }
-
-   private static boolean handleSpec(CommandSender sender, Command command, String[] args) {
-      if (!(sender instanceof Player)) {
-         sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cКонсоль не может спекать за игроками!"));
-         return true;
-      } else {
-         Player senderPlr = (Player)sender;
-         UUID senderUUID = senderPlr.getUniqueId();
-         if (!sender.hasPermission("lmvac.spec")) {
-            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на спек за игроками!"));
-            return true;
-         } else if (!spectatorsUUIDS.containsKey(senderUUID)) {
-            if (args.length < 2) {
-               sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cВы не указали ник игрока для наблюдения."));
-               return true;
-            } else {
-               Player target = Bukkit.getPlayer(args[1]);
-               if (target != null && target.isOnline()) {
-                  if (!target.hasPermission("lmvac.spec.bypass") && !senderPlr.equals(target)) {
-                     spectatorsUUIDS.put(senderUUID, target.getUniqueId());
-                     spectatorsLOCS.put(senderUUID, senderPlr.getLocation());
-                     spectatorsGMS.put(senderUUID, senderPlr.getGameMode());
-                     senderPlr.setGameMode(GameMode.SPECTATOR);
-                     senderPlr.teleport(target);
-                     Iterator var10 = Bukkit.getOnlinePlayers().iterator();
-
-                     while(var10.hasNext()) {
-                        Player online = (Player)var10.next();
-                        if (!online.equals(senderPlr) && !online.hasPermission("lmvac.spec.view")) {
-                           online.hidePlayer(plugin, senderPlr);
-                        }
-                     }
-
-                     String var10001 = ConfigManager.prefix;
-                     sender.sendMessage(ColorUtil.setColorCodes(var10001 + "&bВы успешно начали спекать за &f" + target.getName() + "&b!"));
-                     return true;
-                  } else {
-                     sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cВы не можете проспекать за данным игроком!"));
-                     return true;
-                  }
-               } else {
-                  sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cИгрок не найден или не в сети!"));
-                  return true;
-               }
+    private static boolean handleHelp(CommandSender sender, Command command, String[] args) {
+        if (!sender.hasPermission("lmvac.help")) {
+            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на просмотр доступных комманд!"));
+            return false;
+        } else {
+            sender.sendMessage("");
+            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + " &7Список доступных комманд:"));
+            sender.sendMessage(ColorUtil.setColorCodes(""));
+            sender.sendMessage(ColorUtil.setColorCodes(" &6&l| "));
+            if (sender.hasPermission("lmvac.help")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " help &8- &eПоказать данную помощь"));
             }
-         } else {
-            Location returnLoc = (Location)spectatorsLOCS.get(senderUUID);
-            GameMode returnGM = (GameMode)spectatorsGMS.get(senderUUID);
-            senderPlr.teleport(returnLoc);
-            senderPlr.setGameMode(returnGM);
 
-             for (Player online : Bukkit.getOnlinePlayers()) {
-                 online.showPlayer(plugin, senderPlr);
-             }
+            if (sender.hasPermission("lmvac.alerts")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " alerts &8- &eПереключить жалобы анти-чита"));
+            }
 
-            spectatorsUUIDS.remove(senderUUID);
-            spectatorsLOCS.remove(senderUUID);
-            spectatorsGMS.remove(senderUUID);
-            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&aВы прекратили спекать за игроком."));
+            if (sender.hasPermission("lmvac.spec")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " spec <игрок> &8- &eПроследить за игроком"));
+            }
+
+            if (sender.hasPermission("lmvac.loadplayer")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " loadplayer <игрок/(*/all)> &8- &eЗагрузить профиль игрока"));
+            }
+
+            if (sender.hasPermission("lmvac.profile")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " profile <игрок> &8- &eПосмотреть профиль игрока"));
+            }
+
+            if (sender.hasPermission("lmvac.suspend")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " suspend <игрок> <проверка> &8- &eПосмотреть инфо о нужном чеке игрока"));
+            }
+
+            if (sender.hasPermission("lmvac.npc.spawn")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " npc <игрок> &8- &eЗаспавнить игроку анти-чит бота"));
+            }
+
+            if (sender.hasPermission("lmvac.ban")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " ban <игрок> \"команда\" &8- &eЗабанить игрока"));
+            }
+
+            if (sender.hasPermission("lmvac.admin")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " checks &8- &eУзнать список и информацию о проверках"));
+            }
+
+            if (sender.hasPermission("lmvac.reload")) {
+                sender.sendMessage(ColorUtil.setColorCodes(" &6&l&n|&r &7/" + command.getName() + " reload &8- &eПерезагрузить конфиг"));
+            }
+
+            sender.sendMessage(ColorUtil.setColorCodes(" &6&l| "));
+            sender.sendMessage("");
             return true;
-         }
-      }
-   }
+        }
+    }
 
-   private static boolean handleReload(CommandSender sender, Command command, String[] args) {
-      if (!sender.hasPermission("lmvac.reload")) {
-         sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на перезагрузку конфига!"));
-         return false;
-      } else {
-         plugin.reloadConfig();
-         reloadAPI();
-         sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&aКонфиг успешно перезагружен!"));
-         return true;
-      }
-   }
+    private static boolean handleSpec(CommandSender sender, Command command, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cКонсоль не может спекать за игроками!"));
+            return true;
+        } else {
+            Player senderPlr = (Player)sender;
+            UUID senderUUID = senderPlr.getUniqueId();
+            if (!sender.hasPermission("lmvac.spec")) {
+                sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на спек за игроками!"));
+                return true;
+            } else if (!spectatorsUUIDS.containsKey(senderUUID)) {
+                if (args.length < 2) {
+                    sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cВы не указали ник игрока для наблюдения."));
+                    return true;
+                } else {
+                    Player target = Bukkit.getPlayer(args[1]);
+                    if (target != null && target.isOnline()) {
+                        if (!target.hasPermission("lmvac.spec.bypass") && !senderPlr.equals(target)) {
+                            spectatorsUUIDS.put(senderUUID, target.getUniqueId());
+                            spectatorsLOCS.put(senderUUID, senderPlr.getLocation());
+                            spectatorsGMS.put(senderUUID, senderPlr.getGameMode());
+                            senderPlr.setGameMode(GameMode.SPECTATOR);
+                            senderPlr.teleport(target);
+                            Iterator var10 = Bukkit.getOnlinePlayers().iterator();
 
-   private static void reloadAPI() {
-       LocaleManager.reload(plugin);
-       ConfigManager.reloadConfig(plugin.getConfig());
-       Punishments.getInstance().reload();
-       ThemeManager.reload();
-       NpcManager.nameManager.reloadConfigNames();
-       AimNpc.resetMode(plugin);
-       NpcManager.loadSettings(plugin);
-       InventoryListener.reload();
-       InventoryF.reloadCfg(plugin);
-       InventoryC.reloadCfg(plugin);
-       InventoryG.reloadCfg(plugin);
-       LmvPlayer.reload();
-   }
+                            while(var10.hasNext()) {
+                                Player online = (Player)var10.next();
+                                if (!online.equals(senderPlr) && !online.hasPermission("lmvac.spec.view")) {
+                                    online.hidePlayer(plugin, senderPlr);
+                                }
+                            }
+
+                            String var10001 = ConfigManager.prefix;
+                            sender.sendMessage(ColorUtil.setColorCodes(var10001 + "&bВы успешно начали спекать за &f" + target.getName() + "&b!"));
+                            return true;
+                        } else {
+                            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cВы не можете проспекать за данным игроком!"));
+                            return true;
+                        }
+                    } else {
+                        sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cИгрок не найден или не в сети!"));
+                        return true;
+                    }
+                }
+            } else {
+                Location returnLoc = (Location)spectatorsLOCS.get(senderUUID);
+                GameMode returnGM = (GameMode)spectatorsGMS.get(senderUUID);
+                senderPlr.teleport(returnLoc);
+                senderPlr.setGameMode(returnGM);
+
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    online.showPlayer(plugin, senderPlr);
+                }
+
+                spectatorsUUIDS.remove(senderUUID);
+                spectatorsLOCS.remove(senderUUID);
+                spectatorsGMS.remove(senderUUID);
+                sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&aВы прекратили спекать за игроком."));
+                return true;
+            }
+        }
+    }
+
+    private static boolean handleReload(CommandSender sender, Command command, String[] args) {
+        if (!sender.hasPermission("lmvac.reload")) {
+            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&cУ вас нет прав на перезагрузку конфига!"));
+            return false;
+        } else {
+            plugin.reloadConfig();
+            reloadAPI();
+            sender.sendMessage(ColorUtil.setColorCodes(ConfigManager.prefix + "&aКонфиг успешно перезагружен!"));
+            return true;
+        }
+    }
+
+    private static void reloadAPI() {
+        LocaleManager.reload(plugin);
+        ConfigManager.reloadConfig(plugin.getConfig());
+
+        Punishments.getInstance().reload();
+        ThemeManager.reload();
+
+        NpcManager.nameManager.reloadConfigNames();
+        AimNpc.resetMode(plugin);
+        NpcManager.loadSettings(plugin);
+
+        InventoryListener.reload();
+
+        InventoryE.reloadCfg(plugin);
+        InventoryF.reloadCfg(plugin);
+        InventoryC.reloadCfg(plugin);
+        InventoryG.reloadCfg(plugin);
+
+        BadPacketsB.reloadCfg(plugin);
+
+        ClickSpamA.reloadCfg(plugin);
+        PacketSpamA.reloadCfg(plugin);
+
+        PlayerDataManager.reload(plugin);
+
+        AimPacketListener.reloadCfg();
+        AimAIDetector.reload();
+
+        LmvPlayer.reload();
+    }
 }

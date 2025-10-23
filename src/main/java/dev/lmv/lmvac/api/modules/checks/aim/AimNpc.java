@@ -128,6 +128,6 @@ public class AimNpc extends Check implements PacketCheck {
     }
 
     public ListeningWhitelist getReceivingWhitelist() {
-        return ListeningWhitelist.newBuilder().types(new PacketType[]{PacketType.Play.Client.LOOK, PacketType.Play.Client.POSITION_LOOK}).build();
+        return ListeningWhitelist.newBuilder().types(PacketType.Play.Client.LOOK, PacketType.Play.Client.POSITION_LOOK).build();
     }
 }
