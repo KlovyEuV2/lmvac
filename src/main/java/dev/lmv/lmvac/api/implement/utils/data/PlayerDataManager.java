@@ -4,14 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class PlayerDataManager {
@@ -19,6 +21,12 @@ public class PlayerDataManager {
    private static FileConfiguration config;
    private static final Set<UUID> dirtyPlayers = new HashSet<>();
    private static JavaPlugin plugin;
+
+   public static boolean enabled = false;
+
+   public static void reload(Plugin plugin) {
+       enabled = plugin.getConfig().getBoolean("save-data",true);
+   }
 
    public static void setup(JavaPlugin pl) {
       plugin = pl;
@@ -30,18 +38,19 @@ public class PlayerDataManager {
             var2.printStackTrace();
          }
       }
+      reload(plugin);
 
       config = YamlConfiguration.loadConfiguration(file);
       startAutoSaveTask();
    }
 
    public static Map<String, Double> getAllSuspends(UUID uuid) {
-      Map<String, Double> map = new HashMap();
+       ConcurrentHashMap<String, Double> map = new ConcurrentHashMap<>();
       ConfigurationSection section = config.getConfigurationSection(uuid.toString());
       if (section != null) {
 
           for (String checkName : section.getKeys(false)) {
-              double value = config.getDouble(String.valueOf(uuid) + "." + checkName + ".suspends", 0.0);
+              double value = config.getDouble(uuid + "." + checkName + ".suspends", 0.0);
               map.put(checkName, value);
           }
       }
@@ -50,21 +59,22 @@ public class PlayerDataManager {
    }
 
    public static void saveSuspends(UUID uuid, String suspendArg, double value) {
-      config.set(String.valueOf(uuid) + "." + suspendArg + ".suspends", value);
+      if (!enabled) return;
+      config.set(uuid + "." + suspendArg + ".suspends", value);
       markDirty(uuid);
    }
 
    public static void saveTheme(UUID uuid, String name) {
-      config.set(String.valueOf(uuid) + ".visual.theme", name);
+      config.set(uuid + ".visual.theme", name);
       markDirty(uuid);
    }
 
    public static String getTheme(UUID uuid) {
-      return config.getString(String.valueOf(uuid) + ".visual.theme");
+      return config.getString(uuid + ".visual.theme");
    }
 
    public static double getSuspends(UUID uuid, String suspendArg) {
-      return config.getDouble(String.valueOf(uuid) + "." + suspendArg + ".suspends", 0.0);
+      return config.getDouble(uuid + "." + suspendArg + ".suspends", 0.0);
    }
 
    private static void markDirty(UUID uuid) {

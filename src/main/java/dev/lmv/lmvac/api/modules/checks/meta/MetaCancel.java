@@ -13,10 +13,12 @@ import dev.lmv.lmvac.api.ConfigManager;
 import dev.lmv.lmvac.api.implement.api.Geyser;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
 import net.md_5.bungee.api.chat.BaseComponent;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -32,27 +34,43 @@ import java.util.logging.Level;
 // Отменяет Мета-пакеты игрока/ заменяет их.
 @SettingCheck(
         value = "MetaCancel",
-        cooldown = Cooldown.COOLDOWN
+        cooldown = Cooldown.COOLDOWN,
+        descType = DescType.RELEASE,
+        description = "Cancels packages that are unnecessary for legitimate clients to hide them from illegal clients."
 )
 public class MetaCancel extends Check implements PacketCheck {
 
-    private final boolean hideHealth;
-    private final boolean hideEffects;
-    private final boolean hideItemEnchants;
-    private final boolean hideItemAttributes;
-    private final boolean hideItemName;
-    private final boolean hideItemLore;
-    private final boolean hidePotionEffects;
+    private boolean hideHealth;
+    private boolean hideEffects;
+    private boolean hideItemEnchants;
+    private boolean hideItemAttributes;
+    private boolean hideItemName;
+    private boolean hideItemLore;
+    private boolean hidePotionEffects;
+    private boolean healthOnlyInvisible;
 
     public MetaCancel(Plugin plugin) {
         super(plugin);
-        this.hideHealth = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.health");
-        this.hideEffects = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.effects");
-        this.hideItemEnchants = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.item.enchants");
-        this.hideItemAttributes = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.item.attributes");
-        this.hideItemName = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.item.name");
-        this.hideItemLore = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.item.lore");
-        this.hidePotionEffects = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.potion.effects");
+        try {
+            ConfigurationSection section = plugin.getConfig().getConfigurationSection("checks.visual.checks.a");
+            this.hideHealth = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.health");
+            this.hideEffects = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.effects");
+            this.hideItemEnchants = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.item.enchants");
+            this.hideItemAttributes = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.item.attributes");
+            this.hideItemName = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.item.name");
+            this.hideItemLore = ConfigManager.getBoolean(LmvAC.getInstance().getConfig(), "checks.visual.checks.a.hide.item.lore");
+            this.hidePotionEffects = section.getBoolean("hide.potion.effects",true);
+            this.healthOnlyInvisible = section.getBoolean("health-only-invisible",true);
+        } catch (Exception e) {
+            this.hideHealth = true;
+            this.hideEffects = true;
+            this.hideItemEnchants = true;
+            this.hideItemAttributes = true;
+            this.hideItemName = true;
+            this.hideItemLore = true;
+            this.hidePotionEffects = true;
+            this.healthOnlyInvisible = true;
+        }
     }
 
     public void onPacketSending(PacketEvent event) {
@@ -137,18 +155,37 @@ public class MetaCancel extends Check implements PacketCheck {
         try {
             if (packet.getWatchableCollectionModifier().size() == 0) return;
 
-            List<WrappedWatchableObject> metadata = packet.getWatchableCollectionModifier().read(0);
+            List<?> rawMetadata = packet.getWatchableCollectionModifier().readSafely(0);
+            if (rawMetadata == null) return;
+
+            List<WrappedWatchableObject> metadata = new ArrayList<>();
+            for (Object obj : rawMetadata) {
+                if (obj instanceof WrappedWatchableObject) {
+                    WrappedWatchableObject watchable = (WrappedWatchableObject) obj;
+                    metadata.add(watchable);
+                }
+            }
+
             if (metadata == null || metadata.isEmpty()) return;
 
             int entityId = packet.getIntegers().read(0);
-            Player targetPlayer = (Player) LmvPlayer.plID.get(entityId);
+            Player targetPlayer = LmvPlayer.plID.get(entityId);
             if (targetPlayer == null) return;
 
             List<WrappedWatchableObject> filtered = new ArrayList<>();
             for (WrappedWatchableObject watchable : metadata) {
                 if (watchable != null) {
                     int index = watchable.getIndex();
-                    if ((!hideHealth || index != 8) && isSupportedMetadataTypeSafe(watchable.getValue())) {
+                    if (index == 8 && hideHealth) {
+                        if (healthOnlyInvisible) {
+                            if (targetPlayer.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
+                                continue;
+                            }
+                        } else {
+                            continue;
+                        }
+                    }
+                    if (isSupportedMetadataTypeSafe(watchable.getValue())) {
                         filtered.add(watchable);
                     }
                 }

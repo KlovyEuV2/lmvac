@@ -26,7 +26,7 @@ public class SettingsSetter {
                 PacketContainer packet = event.getPacket();
 
                 int id = player.getEntityId();
-                LmvPlayer client = (LmvPlayer)LmvPlayer.players.get(id);
+                LmvPlayer client = LmvPlayer.players.get(id);
                 if (client == null) return;
 
                 String locale = packet.getStrings().readSafely(0);
@@ -47,7 +47,7 @@ public class SettingsSetter {
                 boolean safeTextFiltering = (textFiltering != null) ? textFiltering : true;
                 boolean safeAllowServerListings = (allowServerListings != null) ? allowServerListings : true;
 
-                LmvPlayer.ClientSettings settings = new LmvPlayer.ClientSettings(
+                client.clientSettings = new LmvPlayer.ClientSettings(
                         safeLocale,
                         safeViewDistance,
                         safeChatVisibility,
@@ -57,8 +57,6 @@ public class SettingsSetter {
                         safeTextFiltering,
                         safeAllowServerListings
                 );
-
-                client.clientSettings = settings;
             }
         });
     }

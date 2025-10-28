@@ -1,22 +1,28 @@
 package dev.lmv.lmvac.api.modules.checks.inventory;
 
 import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.ListeningWhitelist;
+import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
+import dev.lmv.lmvac.api.implement.api.packetListeners.InventoryListener;
 import dev.lmv.lmvac.api.implement.api.settings.LocaleManager;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.BukkitCheck;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
 import dev.lmv.lmvac.api.implement.utils.TimeUtil;
+import dev.lmv.lmvac.api.implement.utils.inventory.InventoryUtil;
 import dev.lmv.lmvac.api.implement.utils.simulation.MovementUtil;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
 // Движения в инвентаре
-@SettingCheck(value = "InventoryF", cooldown = Cooldown.COOLDOWN)
+@SettingCheck(value = "InventoryF", cooldown = Cooldown.COOLDOWN, descType = DescType.ALPHA, description = "InventoryMove' Detection")
 public class InventoryF extends Check implements BukkitCheck, PacketCheck {
     public static int IMoves = 5;
     public InventoryF(Plugin plugin) {
@@ -37,6 +43,7 @@ public class InventoryF extends Check implements BukkitCheck, PacketCheck {
             if (!packetType.equals(PacketType.Play.Client.POSITION) && !packetType.equals(PacketType.Play.Client.POSITION_LOOK) && !packetType.equals(PacketType.Play.Client.LOOK)) {
                 if (packetType.equals(PacketType.Play.Client.WINDOW_CLICK) && targetPlayer.inventoryMoves >= IMoves && MovementUtil.checkMove(player)) {
                     event.setCancelled(true);
+                    InventoryUtil.updateSlot(targetPlayer,event);
                 }
             } else {
                     if (player.isInsideVehicle() || player.isGliding() || player.isInWater()) {
@@ -74,7 +81,8 @@ public class InventoryF extends Check implements BukkitCheck, PacketCheck {
                         String pReason = reason
                                 .replaceAll("%0",lastClose)
                                 .replaceAll("%1",lastClick)
-                                .replaceAll("%2",String.valueOf(targetPlayer.inventoryMoves));
+                                .replaceAll("%2",String.valueOf(targetPlayer.inventoryMoves)
+                                .replaceAll("%m",(targetPlayer.inventoryMoves>=IMoves)?"moving ":""));
                         this.aFlag(player, targetPlayer, event, pReason);
                     }
                 }

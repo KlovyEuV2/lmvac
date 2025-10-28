@@ -1,17 +1,23 @@
 package dev.lmv.lmvac.api.implement.checks.other;
 
+import dev.lmv.lmvac.LmvAC;
 import dev.lmv.lmvac.api.ConfigManager;
+import dev.lmv.lmvac.api.implement.ai.listener.AimPacketListener;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.modules.checks.aim.AimA;
 import dev.lmv.lmvac.api.modules.checks.aim.snaps.Snap360;
 import dev.lmv.lmvac.api.modules.checks.aim.snaps.SnapElytra;
 import dev.lmv.lmvac.api.modules.checks.aim.AimNpc;
 import dev.lmv.lmvac.api.modules.checks.autoclicker.inventory.ClickSpamA;
+import dev.lmv.lmvac.api.modules.checks.autoclicker.packet.PacketSpamA;
 import dev.lmv.lmvac.api.modules.checks.badpackets.inventory.*;
+import dev.lmv.lmvac.api.modules.checks.badpackets.other.BadPacketsB;
 import dev.lmv.lmvac.api.modules.checks.flight.FlightC;
 import dev.lmv.lmvac.api.modules.checks.inventory.*;
 import dev.lmv.lmvac.api.modules.checks.meta.AttributeCancel;
 import dev.lmv.lmvac.api.modules.checks.meta.MetaCancel;
 import dev.lmv.lmvac.api.modules.checks.multiactions.MultiActionsA;
+import dev.lmv.lmvac.api.modules.checks.other.AutoFishA;
 import dev.lmv.lmvac.api.modules.checks.sprint.SprintB;
 import dev.lmv.lmvac.api.modules.checks.timer.NegativeTimer;
 import dev.lmv.lmvac.api.modules.checks.timer.PacketTimer;
@@ -21,7 +27,7 @@ import java.util.*;
 import org.bukkit.plugin.Plugin;
 
 public class CheckManager {
-    private static List<Check> checks = new ArrayList<>();
+    public static List<Check> checks = new ArrayList<>();
 
     public static NegativeTimer negativeTimer;
     public static PacketTimer timer;
@@ -30,10 +36,17 @@ public class CheckManager {
         ConfigManager.setCheckManager(this);
 
         checks = new ArrayList<>(Arrays.asList(
-                new BadPacketsA(plugin), new InventoryB(plugin), new BadPacketsD(plugin), new SprintB(plugin),
-                new FlightC(plugin), new PacketTimer(plugin), new MetaCancel(plugin), new Snap360(plugin), new InventoryF(plugin),
-                new InventoryC(plugin), new AimNpc(plugin), new AttributeCancel(plugin), new SnapElytra(plugin), new InventoryE(plugin), new MultiActionsA(plugin),
-                new InventoryG(plugin), new ClickSpamA(plugin)
+                new AimNpc(plugin), new AimPacketListener(LmvAC.instance),
+                new AttributeCancel(plugin), new AutoFishA(plugin),
+                new BadPacketsA(plugin), new BadPacketsD(plugin),
+                new ClickSpamA(plugin),
+                new FlightC(plugin),
+                new InventoryB(plugin), new InventoryC(plugin), new InventoryE(plugin), new InventoryF(plugin), new InventoryG(plugin), new InventoryH(plugin),
+                new MetaCancel(plugin),
+                new MultiActionsA(plugin),
+                new PacketSpamA(plugin),
+                new Snap360(plugin), new SnapElytra(plugin),
+                new SprintB(plugin)
         ));
 
         for (Check check : checks) {

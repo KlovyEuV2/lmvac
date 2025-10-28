@@ -5,6 +5,7 @@ import com.comphenix.protocol.events.ListeningWhitelist;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
@@ -14,7 +15,9 @@ import org.bukkit.plugin.Plugin;
 // Отменяет пакет узнавания атрибутов (от <не бить голых>, а также что-бы игроки били нпс)
 @SettingCheck(
         value = "AttributeCancel",
-        cooldown = Cooldown.COOLDOWN
+        cooldown = Cooldown.COOLDOWN,
+        descType = DescType.RELEASE,
+        description = "Cancels packages that are unnecessary for legitimate clients to hide them from illegal clients."
 )
 public class AttributeCancel extends Check implements PacketCheck {
     public AttributeCancel(Plugin plugin) {
@@ -25,11 +28,15 @@ public class AttributeCancel extends Check implements PacketCheck {
         PacketType packetType = event.getPacketType();
         PacketContainer packet = event.getPacket();
         if (packet != null && !packet.getIntegers().getValues().isEmpty()) {
-            int entityId = packet.getIntegers().read(0);
-            if (entityId != player.getEntityId()) {
-                if (packetType == PacketType.Play.Server.UPDATE_ATTRIBUTES) {
-                    event.setCancelled(true);
+            try {
+                int entityId = packet.getIntegers().read(0);
+                if (entityId != player.getEntityId()) {
+                    if (packetType == PacketType.Play.Server.UPDATE_ATTRIBUTES) {
+                        event.setCancelled(true);
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

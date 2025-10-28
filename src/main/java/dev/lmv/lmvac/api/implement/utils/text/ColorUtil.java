@@ -13,18 +13,16 @@ public class ColorUtil {
          return null;
       } else {
          Matcher matcher = RGB_PATTERN.matcher(text);
-         StringBuffer buffer = new StringBuffer();
+         StringBuilder buffer = new StringBuilder();
 
          while(matcher.find()) {
             String hexColor = matcher.group(2);
             StringBuilder colorBuilder = new StringBuilder("§x");
             char[] var5 = hexColor.toCharArray();
-            int var6 = var5.length;
 
-            for(int var7 = 0; var7 < var6; ++var7) {
-               char c = var5[var7];
-               colorBuilder.append('§').append(c);
-            }
+             for (char c : var5) {
+                 colorBuilder.append('§').append(c);
+             }
 
             matcher.appendReplacement(buffer, Matcher.quoteReplacement(colorBuilder.toString()));
          }

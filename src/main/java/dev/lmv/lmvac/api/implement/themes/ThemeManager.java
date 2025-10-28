@@ -4,7 +4,6 @@ import dev.lmv.lmvac.LmvAC;
 import dev.lmv.lmvac.api.implement.utils.data.PlayerDataManager;
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

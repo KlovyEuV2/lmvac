@@ -1,15 +1,20 @@
 package dev.lmv.lmvac.api.modules.checks.inventory;
 
 import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.ListeningWhitelist;
+import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import dev.lmv.lmvac.api.implement.api.LmvPlayer;
+import dev.lmv.lmvac.api.implement.api.packetListeners.InventoryListener;
 import dev.lmv.lmvac.api.implement.api.settings.LocaleManager;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
+import dev.lmv.lmvac.api.implement.checks.type.DescType;
 import dev.lmv.lmvac.api.implement.checks.type.SettingCheck;
 import dev.lmv.lmvac.api.implement.checks.type.cooldown.Cooldown;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
 import dev.lmv.lmvac.api.implement.utils.TimeUtil;
+import dev.lmv.lmvac.api.implement.utils.inventory.InventoryUtil;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -21,7 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
 // Много-кратные быстрые и резкие клики после сброса спринта
 @SettingCheck(
         value = "InventoryC",
-        cooldown = Cooldown.NO_COOLDOWN
+        cooldown = Cooldown.NO_COOLDOWN,
+        descType = DescType.ALPHA,
+        description = "Sharp multiple clicks after sprint reset 'Detection"
 )
 public class InventoryC extends Check implements PacketCheck {
     public InventoryC(Plugin plugin) {
@@ -105,10 +112,9 @@ public class InventoryC extends Check implements PacketCheck {
                     String pReason = reason
                             .replaceAll("%0",lastSprint)
                             .replaceAll("%1", String.valueOf(timeDiff));
-
-
                     packetEvent.setCancelled(true);
                     flag(player, pReason);
+                    InventoryUtil.updateSlot(client,packetEvent);
                 }
 
                 lastClicks.put(uuid, new ClickData(clickedItem));

@@ -1,5 +1,5 @@
 name: LmvAC
-version: '1.0.73'
+version: '1.1.4'
 main: dev.lmv.lmvac.LmvAC
 api-version: '1.16'
 description: "by LmvDev / Support: dsc.gg/lmvdev (AntiCheat) [RECODE.v2]"
@@ -12,3 +12,5 @@ commands:
     usage: §4Использование §8- §7/<command> help
   lmvlua:
     aliases: [lmvaclua,luachecks]
+  lmvai:
+    aliases: [lmvml]
