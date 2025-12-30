@@ -1,0 +1,195 @@
+#
+# Список Action's:
+#
+# $close_inv$, $server_close_inv$, $stop_sprinting$, $stop_sneaking$, $stop_gliding$
+# $stop_flying$, $disable_flight$, $update_inventory$, $player_update_inventory$, $server_update_inventory$
+#
+# Примеры названий чеков:
+# !InventoryA, !Inventory^, Inventory^, InventoryA
+#
+# Inventory^ - Все чеки у которых начало Inventory
+# !InventoryA - Не InventoryA (исключение)
+# !Inventory^ - Исключаем все чеки у которых начало на Inventory
+# InventoryA - Чистое название проверки
+#
+autofish:
+  checks:
+    - AutoFishA
+  punishments:
+    - "7;$flag$"
+    - "2;$alert$"
+actions:
+  checks:
+    - ActionsSpamA
+  punishments:
+    - "1;$alert$"
+    - "3;$fdamage_0.1$"
+    - "2;$flag$"
+    - "5;lmvac ban %player%"
+aima:
+  checks:
+    - AimA
+  punishments:
+    - "7;$flag$"
+    - "1;$alert$"
+    - "15;lmvac ban %player%"
+#simulation:
+#  checks:
+#    - SimulationA
+#  punishments:
+#    - "8;$flag$"
+#    - "2;$alert$"
+#    - "15;lmvac ban %player%"
+#movement:
+#  checks:
+#    - FlightA
+#    - SpeedA
+#    - NoWebA
+#    - StrafeA
+#    - NoSlowA
+#  punishments:
+#    - "5;$flag$"
+#    - "1;$alert$"
+##    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+autoswap:
+  checks:
+    - InventoryH
+  punishments:
+    - "6;$flag$"
+    - "4;$alert$"
+    - "9;lmvac ban %player%"
+#autoclicker:
+#  checks:
+#    - PacketSpamA
+#    - ClickSpamA
+#  punishments:
+#    - "14;$flag$"
+#    - "7;$alert$"
+##    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+fastswaps:
+  checks:
+    - BadPacketsA
+  punishments:
+    - "9;$flag$"
+    - "6;$alert$"
+    - "15;lmvac ban %player%"
+multiActions:
+  checks:
+    - MultiActionsA
+  punishments:
+    - "9;$flag$"
+    - "5;$alert$"
+    - "15;lmvac ban %player%"
+npc:
+  checks:
+    - AimNpc
+  punishments:
+    - "3;$alert$"
+    - "5;$flag$"
+    - "1;$fdamage_0.1$"
+    - "2;$fdamage_0.05$"
+    - "3;$fdamage_0.01$"
+    - "7;lmvac ban %player%"
+snap:
+  checks:
+    - Snap360
+    - SnapElytra
+  punishments:
+    - "1;lmvac npc %player% -s"
+    - "6;lmvac npc %player% -s"
+    - "4;$alert$"
+    - "5;$flag$"
+    - "9;lmvac ban %player%"
+guimove-actions:
+  checks:
+    - InventoryG
+  punishments:
+    - "7;$flag$"
+    - "4;$alert$"
+    #    - "5;$server_close_inv$"
+    - "13;lmvac ban %player%"
+sprintaura:
+  checks:
+    #    - SprintB
+    - SprintC
+  punishments:
+    - "6;$flag$"
+    - "2;$alert$"
+    - "5;$fdamage_0.1$"
+    - "7;$fdamage_0.05$"
+    - '8;lmvac npc %player% -s'
+    - "9;lmvac ban %player%"
+sprint_hard:
+  checks:
+    - SprintA
+  punishments:
+    - "2;$flag$"
+    - "1;$alert$"
+    - "7;lmvac ban %player%"
+guimove:
+  checks:
+    - InventoryC
+  punishments:
+    - "8;$flag$"
+    - "6;$alert$"
+    - "11;lmvac ban %player%"
+guimove_advanced:
+  checks:
+    - InventoryF
+    - InventoryD
+  punishments:
+    - "1;$close_inv$"
+    - "1;$alert$"
+#guiclick_spam:
+#  checks:
+#    - InventoryA
+#  punishments:
+#    - "1;$alert$"
+guimove_actions:
+  checks:
+    - InventoryE
+  punishments:
+    - "8;$flag$"
+    - "5;$alert$"
+    - "1;$close_inv$"
+    - "17;lmvac ban %player%"
+funtimeguimove:
+  checks:
+    - InventoryB
+  punishments:
+    - "8;$flag$"
+    - "6;$alert$"
+    - "1;$close_inv$"
+    - "11;lmvac ban %player%"
+itemswapfix:
+  checks:
+    - BadPacketsD
+  punishments:
+    - "14;$flag$"
+    - "8;$alert$"
+doublesnap:
+  checks:
+    - AimDoubleSnap
+  punishments:
+    - "3;$flag$"
+    - "1;$alert$"
+#    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+#flightspeed:
+#  checks:
+#    - FlightC
+#  punishments:
+#    - "1;$flag$"
+#    - "5;$alert$"
+#    - "15;kick %player% %prefix%&cПодозрение в использовании читов."
+#movementorder:
+#  checks:
+#    - PacketOrderA
+#  punishments:
+#    - "14;$flag$"
+#    - "11;$alert$"
+#    - "39;kick %player% %prefix%&cMovement Packets Timed out."
+default:
+  checks:
+    - default
+  punishments:
+    - "20;$alert$"

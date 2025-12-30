@@ -1,0 +1,243 @@
+main-prefix: "&#56A6FFАнтиЧит &8>&r "
+vl-remove-time: 7000
+time-without-alert: 3000
+
+notification:
+  advertising: true # Ну тут небольшая реклама при входе. ;), можете отрубить. (Пишет только тем у кого есть право lmvac.notify.advertising)
+
+save-data: true # player-data.yml
+
+default:
+  command:
+    ban:
+      no-argument:
+        - "%%r:kill %player%"
+        - "kick %player% %prefix%&cПодозрение в постороннем ПО. -s"
+        - "--$animation^"
+
+# ru_ru, en_us
+locale: ru_ru
+# Доп. Информация о проверке
+# Вызвать можно в алертах, символами:
+# %// - начало, //% - конец
+#
+# доступные плейсхолдеры:
+# %ping% - пинг игрока, %tps% - тпс сервера,
+# %ticking% - обрабатывается ли игрок тиками, может пригодиться для инфо залагало ли у игрока и тд.
+# %prefix% - префикс античита, %displayname% - дисплейнейм игрока.
+main:
+  tab-complete:
+    - '&7'
+    - ' &6&l&n|&r &fПинг: &b%ping% &8| &fТпс: &6%tps%'
+    - ' &6&l| &fИгрок обрабатывается: &6%ticking%'
+    - '&7'
+  alerts:
+    - '%prefix%%//&f%player%//% &#FB5B29failed &#1E90FF&f%check% &#FB5B29check &#AEB9BC[&#FB5B29x%vl%&#AEB9BC] &8# %reason%'
+
+punish:
+  blocked-commands:
+    - "luckperms "
+    - "restart"
+    - "reload"
+    - "stop"
+    - "unban "
+    - "unmute "
+    - "gm"
+    - "gamemode"
+    - "plugman"
+    - "op "
+    - "deop "
+    - "lp "
+
+# Permissions/Права:
+# lmvac.alerts - checks alerts / сообщения об подозрении
+# lmvac.notify.brand - brand notify / сообщение о клиенте игрока при его заходе
+# lmvac.bypass.#check - bypass check / убрать проверку на данного игрока, см. ваш плагин на права.
+# lmvac.ban - /lmvac ban, lmvac.ban.bypass - bypass.
+# lmvac.theme, .set, .get, .reset, /lmvac theme, lmvac.theme - важное для того что-бы работали другие под-права
+# lmvac.admin - /lmvac checks
+#
+# Commands/Команды:
+# /LmvAC help - для подробной информации
+#
+# In-Plugin-Placeholders/Внутри-плагинные-плейсхолдеры:
+# %prefix% - префикс плагина <main-prefix>
+# %player% - игрок/цель античита
+# %vl% - кол-во подозрении на игрока/цель античита
+#
+#
+
+#
+# Раз в сколько будет сохранять данные об Position_Look/Look.
+# Если не знаете что это, лучше не трогайте.
+#
+# Сделано частично для оптимизаций (Если будет лагать, то попробуйте поставить 20ms(или более). (либо свое значение)
+# Перед тем как менять проверьте нагрузки в Spark, а также из-за чего идет нагрузка.
+# (не рек. ставить маленькое, либо большое значение, тк при малом - может быть нагрузка, при большом - плохой детект. рек. - +- 20ms.
+#
+look:
+  savePT: 20
+
+aimML:
+  per-ticks: 5
+  threshold: 0.75
+  min-diffs: 0.0001
+  min-movement-threshold: 5.0
+  significant-movement-threshold: 15.0
+  consistency-threshold: 0.6
+  punish-commands:
+    - "kick %player% &cAimML"
+  vl:
+    alerts: 5
+    per-detect: 5
+    punishment: 100
+    reset: 600
+    cooldown: 40
+  analyze:
+    min-snapshots: 30
+  target:
+    max-distance: 6
+    looking-threshold: 0.8
+  min-snapshots: 50
+
+# Тут настройки AimNpc.
+npc:
+  strafe: true
+  timeout: 3000
+  armor-virtualization: true
+  armor-chane: 40
+  angle:
+    min: -45
+    max: 45
+  distance:
+    min: 1.5
+    default: 2.5
+    max: 3.5
+  rotation-mode: smart # smart / default
+  rotation-update: 2 # в тиках
+  spawn-mode: smart
+  aim-mode: old # old / new \ middle
+  smooth-aim:
+    enabled: true
+    per-ticks: 1 # если ансофт могут бить/мешает пвп, ставьте 1/отрубайте
+  pattern:
+    look: 9
+    smooth: -1
+    default: 5
+  hand-shake:
+    enabled: true
+    min-diff: 580
+    random-add: 50
+  random: # tab / config / random
+    mode: RANDOM
+    chance:
+      TAB: 100.0
+      CONFIG: 30.0
+      RANDOM: 50.0
+    max-name: 16
+  names: "akvi4;IIuoner;Error404;M7trix;bmwM5_;repeat_w;gercogTop_;EllO1w;RErEreo;OreOb;RrP;mNbPPT;ColaPeps;PepsiCd;BanNaIvente;Privetik_;neModer_;privet_;bustw;killka_;KIllka;PenitB;autoTotem;InvMror;wwwxyz;LoopRepeat;Mannwy;mnba30d"
+
+buffer:
+  sprinta:
+    enabled: true
+    threshold: 4
+    increment: 1
+    decrement: 0.45
+  sprintb:
+    enabled: true
+    threshold: 6
+    increment: 1
+    decrement: 0.5
+  sprintc:
+    enabled: true
+    threshold: 1
+    increment: 1
+    decrement: 0.25
+    cancel-packets: 2 # -1 если отключено, 0 - всегда
+  elytraa:
+    enabled: true
+    threshold: 3.0
+    increment: 1.0
+    decrement: 0.1
+  wallhita:
+    enabled: true
+    threshold: 3.0
+    increment: 1.0
+    decrement: 0.25
+
+checks:
+  sprintc:
+    mode: PACKET # TICK/PACKET/PACKET_HARD !!! Для Free, доступен только TICK !!!
+  autoclicker:
+    PacketSpamA: # Inventory
+      clicks: 20
+      per: 1000 # ms
+    ClickSpamA: # Inventory
+      diff: 30 # ms
+  sprint:
+    a:
+      diff: 0.35
+  elytra:
+    a:
+      baseMaxSpeed: 1.89
+      speedMultiplierFactor: 50.0
+  badpackets:
+    b:
+      velocity-y: -999.0 # Velocity-y при флаге(визуализация клиентского-флага, пакеты все-равно отменяет.)
+  packetorder:
+    a:
+      max-ping: 929
+  inventory:
+    update-inventory: true
+    c:
+      diff: 20 # смотрите сами. рек: 20.
+      sprint: 500 # рек. не ниже 500 и не выше 1000.
+    e:
+      cancel-moves: 5 # не рек. ставить ниже 5. (лучше ост 5(def).) (самый минимум - 3. от ложных.)
+      packets: # Тут указываем пакеты которые будет слушать(детектить)
+        - LOOK
+        # - POSITION_LOOK
+        # - ENTITY_ACTION
+        - USE_ENTITY
+        - BLOCK_DIG
+        - BLOCK_PLACE
+        - HELD_ITEM_SLOT
+        - USE_ITEM
+        - WINDOW_CLICK
+    f:
+      stop-sprint: true
+      cancel-moves: 5 # не рек. ставить ниже 2-3. (лучше ост 5(def).)
+    g: # проверка на пакеты которые игрок не может кидать в инвентаре за последние например 50 мс
+      cSpam-required: false
+      diff: 20 # от ложных (только если расстояние между посл. сликом и текущ. <=diff.
+      threshold: 50 # 50 мс - 1 тик, времени от посл. пакетов (рек 1 тик / 50 мс)
+    h:
+      diff: 0
+  invL:
+    position-reset: 5 # рек. ставить 5. (не рек. ставить ниже.)
+    upd-close: true
+  disabled:
+    - SpeedA
+    - FlightA
+    - NowebA
+    - ModerSpoof
+    - ClickSpamA
+    - PacketOrderA
+    - BadPacketsB # Тест HighJumpShulker
+    - AimML
+    - AutoFishA
+    - PacketTimer
+  visual:
+    checks:
+      a: # esp(metaView)
+        health-only-invisible: true
+        hide:
+          health: true            # Убирает здоровье (index 8 — здоровье сущности)
+          effects: true           # Убирает все эффекты зелий (включая ENTITY_EFFECT)
+          item:
+            name: true            # Убирает имя предмета
+            lore: true            # Убирает описание предмета
+            enchants: true          # Убирает все зачарование с предметов и зелий
+            attributes: true        # Убирает атрибуты предметов
+          potion:
+            effects: true         # Убирает эффекты зелья

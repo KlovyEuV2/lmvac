@@ -1,0 +1,17 @@
+name: LmvAC
+version: '1.2.1'
+main: dev.lmv.lmvac.LmvAC
+api-version: '1.16'
+description: "by LmvDev / Support: dsc.gg/lmvdev (AntiCheat) [RECODE.v2.1]"
+depend: [ProtocolLib]
+softdepend: [Geyser-Spigot,PlaceholderAPI]
+authors:
+  - billzxzs
+  - KlovyEuV2
+commands:
+  lmvac:
+    usage: §4Использование §8- §7/<command> help
+  lmvlua:
+    aliases: [lmvaclua,luachecks]
+  lmvai:
+    aliases: [lmvml]
