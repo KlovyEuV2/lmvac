@@ -119,7 +119,7 @@ public class SprintC extends Check implements PacketCheck, Configurable {
         UUID uuid = player.getUniqueId();
         LmvPlayer client = LmvPlayer.get(player);
         if (client == null) return;
-        if (IceUtil.isOnIce(player) || FluidUtil.isInFluid(player) || client.hasSprint || player.isInsideVehicle()
+        if (IceUtil.isOnIce(player) || FluidUtil.isInFluid(player) || client.player.isSprinting() || player.isInsideVehicle()
                 || player.isFlying() || player.isGliding()) {
             if (buffer.enabled) buffer.reduceBuffer(player);
             return;
@@ -134,7 +134,7 @@ public class SprintC extends Check implements PacketCheck, Configurable {
             // кароче 1 словом - детект SrintSpoof'еров
             if (lastcheck.get(uuid) == null || !Objects.equals(lastcheck.get(uuid), now)) return;
             if (!player.isOnline() || event.isCancelled() || player.isJumping()) return;
-            if (client.hasSprint && client.isSpeedSimulation()) { // слишком не легитное начало спринта
+            if (client.player.isSprinting() && client.isSpeedSimulation()) { // слишком не легитное начало спринта
                 if (buffer.enabled) {
                     buffer.addViolation(player);
                     double cBuffer = buffer.getBuffer(player);

@@ -41,11 +41,6 @@ public class SimulationUtil {
         return (Math.abs(deltaXZ-a) < thr);
     }
 
-    public static boolean isSprintDoubleInput(double at, double deltaXZ, double thr) {
-        double a = applySpeed(at,0.2863356);
-        return (Math.abs(deltaXZ-a) < thr);
-    }
-
     public static boolean isSneak(double at, double deltaXZ, double thr) {
         double a = applySpeed(at,0.0649);
         boolean b = isSneakDoubleInput2(at, deltaXZ, thr);

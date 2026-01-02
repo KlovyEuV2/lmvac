@@ -4,6 +4,7 @@ import com.comphenix.protocol.events.PacketEvent;
 import dev.lmv.lmvac.LmvAC;
 import dev.lmv.lmvac.api.ConfigManager;
 import dev.lmv.lmvac.api.implement.ai.listener.AimPacketListener;
+import dev.lmv.lmvac.api.implement.api.LmvPlayer;
 import dev.lmv.lmvac.api.implement.checks.type.Check;
 import dev.lmv.lmvac.api.implement.checks.type.interfaces.PacketCheck;
 import dev.lmv.lmvac.api.modules.checks.aim.AimA;
@@ -29,6 +30,7 @@ import dev.lmv.lmvac.api.modules.checks.timer.PacketTimer;
 import java.util.*;
 
 import dev.lmv.lmvac.api.modules.checks.wallhit.WallHitA;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 public class CheckManager {
@@ -52,7 +54,6 @@ public class CheckManager {
                 new PacketSpamA(plugin),
                 new Snap360(plugin), new SnapElytra(plugin),
                 new SprintA(plugin), new SprintB(plugin), new SprintC(plugin),
-                new ActionsSpamA(plugin),
 
                 new WallHitA(plugin),
                 new InventoryD(plugin)
@@ -83,7 +84,11 @@ public class CheckManager {
             if (check instanceof PacketCheck) {
                 if (check.isEnabled()) {
                     try {
-                        ((PacketCheck) check).onPacketReceiving(event);
+                        Player player = event.getPlayer();
+                        LmvPlayer client = LmvPlayer.get(player);
+                        if (!client.hasBypass(check.getName())) {
+                            ((PacketCheck) check).onPacketReceiving(event);
+                        }
                     } catch (Exception ignored) {}
                 }
             }
@@ -95,7 +100,11 @@ public class CheckManager {
             if (check instanceof PacketCheck) {
                 if (check.isEnabled()) {
                     try {
-                        ((PacketCheck) check).onPacketSending(event);
+                        Player player = event.getPlayer();
+                        LmvPlayer client = LmvPlayer.get(player);
+                        if (!client.hasBypass(check.getName())) {
+                            ((PacketCheck) check).onPacketSending(event);
+                        }
                     } catch (Exception ignored) {}
                 }
             }

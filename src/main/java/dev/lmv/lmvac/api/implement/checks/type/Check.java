@@ -120,12 +120,20 @@ public abstract class Check {
         if (!this.enabled) {
             this.unregister();
         } else if (!this.registered) {
+            if (this instanceof Listener) {
+                Bukkit.getPluginManager().registerEvents((Listener) this,plugin);
+            }
+
             this.registered = true;
         }
     }
 
     public void unregister() {
         if (this.registered) {
+            if (this instanceof Listener) {
+                HandlerList.unregisterAll((Listener)this);
+            }
+
             this.registered = false;
         }
     }

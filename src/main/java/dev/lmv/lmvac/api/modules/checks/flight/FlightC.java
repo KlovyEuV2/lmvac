@@ -26,8 +26,6 @@ import org.bukkit.plugin.Plugin;
         descType = DescType.BETA
 )
 public class FlightC extends Check implements BukkitCheck {
-    public static ConcurrentHashMap<UUID,Long> lastFlight = new ConcurrentHashMap<>();
-
     public FlightC(Plugin plugin) {
         super(plugin);
     }
